@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Minha Tutoria — Estudante</title>
+<style>
+:root{--bg:#f4f8f7;--card:#fff;--text:#172033;--muted:#6c7687;--line:#e5e9ef;--p:#156b52;--p2:#0f8c68;--soft:#edf8f4;--shadow:0 16px 36px rgba(30,48,75,.09);--r:22px}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(140deg,#eff8f5,#f7f8fb 46%,#edf3f8);color:var(--text)}button,input,textarea,select{font:inherit}.hidden{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;padding:22px}.box{width:min(430px,100%);background:#fff;border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);padding:28px}.logo{width:50px;height:50px;border-radius:17px;background:linear-gradient(135deg,var(--p),var(--p2));display:grid;place-items:center;color:#fff;font-size:22px;font-weight:900}.brand{display:flex;gap:12px;align-items:center;margin-bottom:20px}h1,h2,h3,p{margin-top:0}.sub{color:var(--muted);line-height:1.5}.label,label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 13px;outline:none;background:#fff}textarea{min-height:110px;resize:vertical}input:focus,textarea:focus,select:focus{border-color:#75b8a5;box-shadow:0 0 0 4px rgba(21,107,82,.09)}.btn{border:0;border-radius:14px;padding:12px 15px;font-weight:850;cursor:pointer}.primary{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}.ghost{background:#f1f4f7}.login .btn{width:100%;margin-top:18px}
+.app{max-width:1120px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:18px}.hello h1{margin-bottom:4px}.pill{background:var(--soft);color:var(--p);border:1px solid #cde9df;border-radius:999px;padding:8px 11px;font-weight:800;font-size:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 24px rgba(30,48,75,.06);padding:19px}.action{cursor:pointer;transition:.2s}.action:hover{transform:translateY(-2px);box-shadow:var(--shadow)}.icon{font-size:25px;margin-bottom:12px}.action h3{margin-bottom:6px}.section{display:none;margin-top:16px}.section.active{display:block}.back{margin-bottom:12px}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.full{grid-column:1/-1}.progress{height:10px;background:#edf0f3;border-radius:999px;overflow:hidden;margin:10px 0 4px}.bar{height:100%;background:linear-gradient(90deg,var(--p),var(--p2));width:0}.note{background:#fff8e6;border:1px solid #f3dfaa;padding:12px 14px;border-radius:14px;color:#805b12;font-size:13px}.upload{border:2px dashed #cfd7df;border-radius:18px;padding:28px;text-align:center;background:#fbfcfd}.upload input{border:0;padding:10px}.item{border:1px solid var(--line);border-radius:15px;padding:13px;margin:10px 0}.item small{color:var(--muted);font-weight:700}.status{display:inline-block;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:850;background:var(--soft);color:var(--p)}.right{display:flex;justify-content:flex-end;gap:9px;margin-top:15px}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.top{align-items:flex-start;flex-direction:column}}@media(max-width:430px){.grid{grid-template-columns:1fr}.app{padding:16px}}
+
+.profile-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.profile-btn{min-height:145px;border:1px solid var(--line);background:#fff;border-radius:22px;padding:20px;text-align:left;cursor:pointer;box-shadow:0 8px 24px rgba(30,48,75,.05);transition:.18s}
+.profile-btn:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:#b9d9cf}
+.profile-btn .bigicon{font-size:30px;display:block;margin-bottom:12px}
+.profile-btn strong{display:block;font-size:17px;margin-bottom:6px}
+.profile-btn span{color:var(--muted);font-size:13px;line-height:1.45}
+.bim-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.analysis-box{border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;background:#fbfdfc}
+.analysis-up{background:#eaf8f0;color:#187448;border-radius:14px;padding:14px}
+.analysis-down{background:#fff0f0;color:#a63c3c;border-radius:14px;padding:14px}
+.analysis-stable{background:#fff7e6;color:#8b6415;border-radius:14px;padding:14px}
+.grade-table{width:100%;border-collapse:collapse;margin-top:12px}
+.grade-table th,.grade-table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+.grade-table th{color:var(--muted);font-size:11px;text-transform:uppercase}
+.teacher-only{border:1px dashed #a9cfc2;background:#f4fbf8;border-radius:18px;padding:16px;margin-top:16px}
+.teacher-badge{display:inline-block;background:#173c34;color:#fff;padding:6px 9px;border-radius:999px;font-size:11px;font-weight:850;margin-bottom:10px}
+@media(max-width:850px){.profile-actions{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.profile-actions{grid-template-columns:1fr}}
+
+
+.fe-intro{background:linear-gradient(135deg,#f4fbf8,#eef7ff);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:16px}
+.fe-level{margin-top:18px;border:1px solid var(--line);border-radius:20px;padding:18px;background:#fff}
+.fe-level h3{margin:0 0 5px;font-size:18px}
+.fe-section-title{margin:22px 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.fe-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}
+.fe-tab{border:1px solid var(--line);background:#fff;padding:10px 13px;border-radius:999px;font-weight:800;cursor:pointer}
+.fe-tab.active{background:#173c34;color:#fff;border-color:#173c34}
+.fe-bim-panel{display:none}
+.fe-bim-panel.active{display:block}
+.help-note{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4}
+.fe-progress{height:10px;background:#edf1ef;border-radius:999px;overflow:hidden;margin-top:8px}
+.fe-progress>div{height:100%;background:#2d7f67;width:0;transition:.2s}
+.question-card{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;background:#fcfdfd}
+.question-card label{margin-top:0}
+
+
+.profile-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}
+.profile-tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer}
+.profile-tabs button.active{background:#173c34;color:#fff;border-color:#173c34}
+.follow-section{display:none}
+.follow-section.active{display:block}
+.follow-level{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}
+.follow-question{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#fcfdfd}
+.follow-help{font-size:12px;color:var(--muted);margin-top:6px}
+.follow-progress{height:10px;background:#e8efec;border-radius:999px;overflow:hidden;margin-top:8px}
+.follow-progress>div{height:100%;background:#2d7f67;width:0}
+
+</style>
+</head>
+<body>
+<section id="login" class="login">
+  <div class="box">
+    <div class="brand"><div class="logo">T</div><div><h2 style="margin:0">Minha Tutoria</h2><div class="sub">Espaço do estudante</div></div></div>
+    <p class="sub">Entre com o RA e a senha fornecida pelo seu tutor.</p>
+    <label>RA</label><input id="ra" placeholder="Digite seu RA">
+    <label>Senha</label><input id="pass" type="password" placeholder="Senha de 4 dígitos">
+    <button class="btn primary" onclick="studentLogin()">Entrar</button>
+  </div>
+</section>
+
+<main id="app" class="app hidden">
+  <div class="top"><div class="hello"><h1 id="hello">Olá 👋</h1><p class="sub" id="meta"></p></div><div><span class="pill">Tutoria 2026</span> <button class="btn ghost" onclick="logout()">Sair</button></div></div>
+
+
+  <section id="home" class="section active">
+    <div id="tutorNotice" class="card hidden" style="margin-bottom:14px">
+      <span class="teacher-badge">VISÃO DO TUTOR</span>
+      <h3 style="margin-bottom:5px">Página individual do estudante</h3>
+      <p class="sub" style="margin-bottom:0">Você está visualizando este perfil a partir do painel do professor.</p>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:6px">Tutoria Individual</h2>
+      <p class="sub">Escolha o que deseja consultar.</p>
+      <div class="profile-actions">
+        <button class="profile-btn" onclick="openSec('acompanhamento')"><span class="bigicon">🧭</span><strong>Ficha de acompanhamento</strong><span>Dados gerais, nível básico e nível avançado organizados por bimestre.</span></button>
+        <button class="profile-btn" onclick="openSec('boletim')"><span class="bigicon">📊</span><strong>Boletins</strong><span>Boletins enviados e análise de evolução ou involução das notas.</span></button>
+        <button class="profile-btn" onclick="openBim('1º Bimestre')"><span class="bigicon">1️⃣</span><strong>1º Bimestre</strong><span>Atendimentos realizados no primeiro bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('2º Bimestre')"><span class="bigicon">2️⃣</span><strong>2º Bimestre</strong><span>Atendimentos realizados no segundo bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('3º Bimestre')"><span class="bigicon">3️⃣</span><strong>3º Bimestre</strong><span>Atendimentos realizados no terceiro bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('4º Bimestre')"><span class="bigicon">4️⃣</span><strong>4º Bimestre</strong><span>Atendimentos realizados no quarto bimestre.</span></button>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="fe1" class="section">
+    <button class="btn ghost back" onclick="openSec('home')">← Voltar ao perfil</button>
+
+    <div class="card">
+      <div class="bim-title">
+        <div>
+          <h2>FE1 — Ficha de Evolução da Tutoria Individual</h2>
+          <p class="sub">Questionário de nível básico e nível avançado, com acompanhamento ao longo dos quatro bimestres.</p>
+        </div>
+        <a id="sourcePdf" class="btn ghost hidden" target="_blank">📄 Ver ficha original</a>
+      </div>
+
+      <div class="fe-intro">
+        <b>Preenchimento da FE1</b>
+        <p class="sub" style="margin:6px 0 0">As informações pessoais e familiares são preenchidas uma vez. Sonhos, Projeto de Vida e os itens de acompanhamento avançado ficam registrados por bimestre.</p>
+        <div class="fe-progress"><div id="feProgressBar"></div></div>
+        <div id="feProgressText" class="help-note">0% preenchido</div>
+      </div>
+
+      <div class="fe-level">
+        <h3>🌱 Questionário de nível básico</h3>
+        <p class="sub">Informações essenciais para conhecer o estudante e acompanhar seu Projeto de Vida.</p>
+
+        <div class="fe-section-title">Clube</div>
+        <div class="form-grid">
+          <div>
+            <label>Clube — 1º bimestre</label>
+            <input id="feClub1" placeholder="Nome do clube">
+          </div>
+          <div>
+            <label>Clube — 2º bimestre</label>
+            <input id="feClub2" placeholder="Nome do clube">
+          </div>
+        </div>
+
+        <div class="fe-section-title">Dados pessoais</div>
+        <div class="form-grid">
+          <div><label>Data de nascimento</label><input id="feDob" type="text" placeholder="dd/mm/aaaa"></div>
+          <div><label>Onde nasceu</label><input id="feBirthplace"></div>
+          <div class="full"><label>Endereço</label><input id="feAddress"></div>
+          <div><label>Celular</label><input id="fePhone"></div>
+        </div>
+
+        <div class="fe-section-title">Dados da família</div>
+        <div class="form-grid">
+          <div><label>Contato do responsável</label><input id="feGuardian"></div>
+          <div><label>Pai</label><input id="feFather"></div>
+          <div><label>Mãe</label><input id="feMother"></div>
+          <div><label>Irmão(s)</label><input id="feSiblings"></div>
+          <div class="full"><label>Outros familiares / informações importantes</label><textarea id="feOtherFamily"></textarea></div>
+        </div>
+
+        <div class="fe-section-title">Conhecendo o estudante</div>
+        <div class="question-card">
+          <label>Breve histórico do estudante</label>
+          <textarea id="feHistory"></textarea>
+          <div class="help-note">Peça ajuda ao seu tutor para preencher esta etapa, se necessário.</div>
+        </div>
+
+        <div class="question-card">
+          <label>Breve perfil / características da família</label>
+          <textarea id="feFamilyProfile"></textarea>
+          <div class="help-note">Peça ajuda ao seu tutor para preencher esta etapa, se necessário.</div>
+        </div>
+
+        <div class="fe-section-title">Sonhos e Projeto de Vida</div>
+        <div class="fe-tabs" id="basicBimTabs">
+          <button type="button" class="fe-tab active" onclick="showBasicBim(1,this)">1º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showBasicBim(2,this)">2º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showBasicBim(3,this)">3º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showBasicBim(4,this)">4º bimestre</button>
+        </div>
+
+        <div id="basicBim1" class="fe-bim-panel active">
+          <div class="question-card"><label>Sonhos — 1º bimestre</label><textarea id="feDream1"></textarea></div>
+          <div class="question-card"><label>Projeto de Vida — 1º bimestre</label><textarea id="feProject1"></textarea></div>
+        </div>
+        <div id="basicBim2" class="fe-bim-panel">
+          <div class="question-card"><label>Sonhos — 2º bimestre</label><textarea id="feDream2"></textarea></div>
+          <div class="question-card"><label>Projeto de Vida — 2º bimestre</label><textarea id="feProject2"></textarea></div>
+        </div>
+        <div id="basicBim3" class="fe-bim-panel">
+          <div class="question-card"><label>Sonhos — 3º bimestre</label><textarea id="feDream3"></textarea></div>
+          <div class="question-card"><label>Projeto de Vida — 3º bimestre</label><textarea id="feProject3"></textarea></div>
+        </div>
+        <div id="basicBim4" class="fe-bim-panel">
+          <div class="question-card"><label>Sonhos — 4º bimestre</label><textarea id="feDream4"></textarea></div>
+          <div class="question-card"><label>Projeto de Vida — 4º bimestre</label><textarea id="feProject4"></textarea></div>
+        </div>
+      </div>
+
+      <div class="fe-level">
+        <h3>🚀 Questionário de nível avançado</h3>
+        <p class="sub">Acompanhamento pedagógico e pessoal do tutorado. Cada resposta é registrada separadamente por bimestre.</p>
+
+        <div class="fe-tabs" id="advancedBimTabs">
+          <button type="button" class="fe-tab active" onclick="showAdvancedBim(1,this)">1º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showAdvancedBim(2,this)">2º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showAdvancedBim(3,this)">3º bimestre</button>
+          <button type="button" class="fe-tab" onclick="showAdvancedBim(4,this)">4º bimestre</button>
+        </div>
+
+        <div id="advancedBimContainer"></div>
+      </div>
+
+      <div id="feSaveArea" class="right" style="margin-top:18px">
+        <button class="btn ghost" onclick="saveFe(false)">Salvar rascunho</button>
+        <button class="btn primary" onclick="saveFe(true)">Concluir e enviar</button>
+      </div>
+    </div>
+  </section>
+
+
+
+  <section id="acompanhamento" class="section">
+    <button class="btn ghost back" onclick="backFromFollow()">← Voltar</button>
+    <div class="card">
+      <div id="tutorFollowNotice" class="teacher-only hidden" style="margin-bottom:14px">
+        <span class="teacher-badge">VISUALIZAÇÃO DO TUTOR</span>
+        <b>Esta é exatamente a ficha preenchida pelo estudante.</b>
+      </div>
+      <div class="bim-title">
+        <div>
+          <h2>Ficha de acompanhamento do estudante</h2>
+          <p class="sub">Preencha os dados gerais e acompanhe o estudante por bimestre.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <b id="followProgressText">0% preenchido</b>
+        <div class="follow-progress"><div id="followProgressBar"></div></div>
+      </div>
+
+      <div class="profile-tabs" id="followTabs">
+        <button class="active" onclick="showFollowTab('followGeneral',this)">Dados gerais</button>
+        <button onclick="showFollowTab('follow1',this)">1º bimestre</button>
+        <button onclick="showFollowTab('follow2',this)">2º bimestre</button>
+        <button onclick="showFollowTab('follow3',this)">3º bimestre</button>
+        <button onclick="showFollowTab('follow4',this)">4º bimestre</button>
+      </div>
+
+      <div id="followGeneral" class="follow-section active">
+        <div class="follow-level" style="border-top:0;margin-top:0;padding-top:0">
+          <h3>Clube</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div><label>Clube — 1º semestre</label><input id="faClub1"></div>
+            <div><label>Clube — 2º semestre</label><input id="faClub2"></div>
+          </div>
+        </div>
+
+        <div class="follow-level">
+          <h3>Dados pessoais</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div><label>Data de nascimento</label><input id="faDob" placeholder="dd/mm/aaaa"></div>
+            <div><label>Onde nasceu</label><input id="faBirthplace"></div>
+            <div class="full"><label>Endereço</label><input id="faAddress"></div>
+            <div><label>Celular</label><input id="faPhone"></div>
+          </div>
+        </div>
+
+        <div class="follow-level">
+          <h3>Dados da família</h3>
+          <div class="form-grid" style="margin-top:12px">
+            <div><label>Contato do responsável</label><input id="faGuardian"></div>
+            <div><label>Pai / celular</label><input id="faFather"></div>
+            <div><label>Mãe / celular</label><input id="faMother"></div>
+            <div><label>Irmão(s)</label><input id="faSiblings"></div>
+            <div class="full"><label>Outros</label><textarea id="faOtherFamily"></textarea></div>
+          </div>
+        </div>
+
+        <div class="follow-level">
+          <div class="follow-question">
+            <label>Breve histórico do estudante</label>
+            <textarea id="faHistory"></textarea>
+            <div class="follow-help">Peça ajuda ao seu tutor para preencher esta etapa, se necessário.</div>
+          </div>
+          <div class="follow-question">
+            <label>Breve perfil / características da família</label>
+            <textarea id="faFamilyProfile"></textarea>
+            <div class="follow-help">Peça ajuda ao seu tutor para preencher esta etapa, se necessário.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="followBimContainer"></div>
+
+      <div id="followSaveArea" class="right" style="margin-top:18px">
+        <button class="btn ghost" onclick="saveFollow(false)">Salvar rascunho</button>
+        <button class="btn primary" onclick="saveFollow(true)">Concluir e enviar</button>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="boletim" class="section">
+    <button class="btn ghost back" onclick="openSec('home')">← Voltar ao perfil</button>
+    <div class="card">
+      <h2>Boletins e evolução escolar</h2>
+      <p class="sub">Aqui ficam reunidos os boletins do estudante e a comparação entre os bimestres.</p>
+      <div id="studentUploadArea">
+        <div class="form-grid">
+          <div><label>Bimestre</label><select id="bBim"><option>1º Bimestre</option><option>2º Bimestre</option><option>3º Bimestre</option><option>4º Bimestre</option></select></div>
+          <div><label>Arquivo PDF</label><input id="bFile" type="file" accept="application/pdf"></div>
+        </div>
+        <div class="right"><button class="btn primary" onclick="uploadBulletin()">Enviar boletim</button></div>
+      </div>
+      <div id="bulletinList" style="margin-top:15px"></div>
+      <div id="bulletinAnalysis"></div>
+      <div id="teacherGradeArea" class="teacher-only hidden">
+        <span class="teacher-badge">FERRAMENTA DO TUTOR</span>
+        <h3>Registrar notas para comparação</h3>
+        <p class="sub">Para o sistema calcular automaticamente evolução e involução, registre as notas no formato <b>Disciplina: nota</b>. O PDF continua sendo o documento original.</p>
+        <div class="form-grid">
+          <div><label>Bimestre</label><select id="gBim"><option>1º Bimestre</option><option>2º Bimestre</option><option>3º Bimestre</option><option>4º Bimestre</option></select></div>
+          <div class="full"><label>Notas</label><textarea id="gNotes" placeholder="Matemática: 7,5&#10;Língua Portuguesa: 8&#10;Ciências: 6,5"></textarea></div>
+        </div>
+        <div class="right"><button class="btn primary" onclick="saveGrades()">Salvar notas e analisar</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="bimestre" class="section">
+    <button class="btn ghost back" onclick="openSec('home')">← Voltar ao perfil</button>
+    <div class="card">
+      <div class="bim-title"><div><h2 id="bimHeading">Atendimentos</h2><p class="sub">Registros de atendimento deste bimestre.</p></div><button id="newAttendanceBtn" class="btn primary hidden" onclick="goNewAttendance()">+ Novo atendimento</button></div>
+      <div id="bimAttendanceList"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const DBKEY='tutoria_data_v2';let studentId=null;let isTutor=false;let currentBim='1º Bimestre';
+function canonicalBim(v){const n=parseInt(String(v||'').match(/[1-4]/)?.[0]||'1',10);return `${n}º Bimestre`;}
+
+const FILE_DB='tutoria_pdf_store';
+function openFileDB(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(FILE_DB,1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('pdfs'))db.createObjectStore('pdfs')};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+ });
+}
+async function savePdfBlob(key,file){
+ const db=await openFileDB();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('pdfs','readwrite');
+  tx.objectStore('pdfs').put(file,key);
+  tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+ });
+}
+async function getPdfBlob(key){
+ try{
+  const db=await openFileDB();
+  return await new Promise((resolve,reject)=>{
+   const tx=db.transaction('pdfs','readonly');
+   const req=tx.objectStore('pdfs').get(key);
+   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+  });
+ }catch(e){return null}
+}
+
+const INITIAL_DATA={"students": [{"id": "s1", "name": "ANA FLÁVIA SILVA PAVONI", "internalName": "ANA FLÁVIA SILVA PAVONI", "ra": "115791553", "turma": "6B", "pass": "8421", "club": "Fanfarra", "elective": "Mirela e Claudia", "source": "documentos/01_ANA_FL_VIA_6B.pdf", "sourceName": "ANA FLÁVIA 6B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 14/04 seus sonhos? Tem vontade de um dia participar de um campeonato de vôlei.", "project": "Quer ser advogada e delegada.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:40 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre sonhos, projeto de vida e perspectivas para o futuro, EXCELENTE! incentivando a estudante a refletir sobre seus objetivos pessoais e acadêmicos. Também 07:19 Atendimento com o responsável? dialogamos sobre a Prova Paulista, destacando a importância do comprometimento com os ATENÇÃO! ( ) Sim ( )Não estudos e da participação nas avaliações. BUSCA ATIVA! O que devo fazer? Além disso, foram abordados alguns aspectos pessoais da estudante, promovendo um momento de escuta, acolhimento e fortalecimento do vínculo, contribuindo para seu desenvolvimento pessoal e escolar.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s2", "name": "ARTHUR GUGLIEMONI", "internalName": "ARTHUR GUGLIELMONI ALVES", "ra": "1161127033", "turma": "8B", "pass": "3245", "club": "Pebolim", "elective": "Fundamentos de", "source": "documentos/02_Arthur_Gugliemoni_7B.pdf", "sourceName": "Arthur Gugliemoni 7B.pdf", "warnings": ["Nome do arquivo: Arthur Gugliemoni; nome dentro da ficha: ARTHUR GUGLIELMONI ALVES. Conferir cadastro.", "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "19/02/2014", "city": "", "phone": "", "family": "", "about": "", "dream": "um jogo", "project": "raros em jogos", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s3", "name": "CAIO DE FRANÇA LUQUE", "internalName": "CAIO DE FRANÇA LUQUE", "ra": "1136973746", "turma": "8B", "pass": "9648", "club": "Jogos de mesa", "elective": "Doenças (Ana Paula e", "source": "documentos/03_Caio_8B.pdf", "sourceName": "Caio  8B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "09/09/2012", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 01/04/2026 seus sonhos? Ser programador Sênior", "project": "01/04/2026 Ser programador Sênior. Sempre se interessou por programação.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-25", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre os gostos, interesses e preferências do estudante, minhas faltas? 01/04/2026 promovendo um momento de diál", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s4", "name": "GUSTAVO HENRIQUE", "internalName": "GUSTAVO HENRIQUE DOS SANTOS VIEIRA", "ra": "0001151253145", "turma": "8B", "pass": "5212", "club": "Fanfarra", "elective": "Fundamentos", "source": "documentos/04_Gustavo_Henrique_8A.pdf", "sourceName": "Gustavo Henrique 8A.pdf", "warnings": ["Turma no arquivo: 8A; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Ter uma casa, dar uma casa para a mãe e ter motos.", "project": "Ser lutador de UFC. Treina kikBox.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-29", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância 07:45 Atendimento com o responsável? da continuidade dos estudos após a educação básica, com destaque para a UNESP como ATENÇÃO! ( ) Sim ( )Não possibilidade de formação acadêmica. BUSCA ATIVA! O que devo fazer? Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s5", "name": "HEITOR LUCAS DE OLIVEIRA SILVA FILHO", "internalName": "HEITOR LUCAS DE OLIVEIRA SILVA FILHO", "ra": "116296246", "turma": "8B", "pass": "9586", "club": "Beach Tennis", "elective": "Agro em Ação", "source": "documentos/05_Heitor_7B.pdf", "sourceName": "Heitor 7B.pdf", "warnings": ["Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser feliz seus sonhos?", "project": "Ser advogado", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a minhas faltas? importância da escola na construção e realização desses objetivos. Os estudantes foram EXCELENTE! 07:20 incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para Atendimento com o responsável? alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s6", "name": "ISABELA AZEVEDO DA SILVA", "internalName": "ISABELA AZEVEDO DA SILVA", "ra": "1143747859", "turma": "7A", "pass": "5477", "club": "Vôlei", "elective": "Fundamentos em", "source": "documentos/06_Isabela_7A.pdf", "sourceName": "Isabela 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser advogada seus sonhos?", "project": "Tornar-se advogada pois quer trabalhar com a lei", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s7", "name": "JEAN LUCCA GOUVÊA DE OLIVEIRA", "internalName": "JEAN LUCCA GOUVÊA DE OLIVEIRA", "ra": "1160067909", "turma": "7B", "pass": "5619", "club": "", "elective": "", "source": "documentos/07_Jean_7B.pdf", "sourceName": "Jean 7B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "06/06/2014", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser empresário ou seus sonhos? dublador", "project": "", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a minhas faltas? importância da escola na construção e realização desses objetivos. Os estudantes foram EXCELENTE! 07:20 incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para Atendimento com o responsável? alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s8", "name": "LIVIA SOFIA DE ARAUJO COSTA", "internalName": "LIVIA SOFIA DE ARAUJO COSTA", "ra": "1201565431", "turma": "7A", "pass": "8213", "club": "Cinema", "elective": "", "source": "documentos/08_L_via_7A.pdf", "sourceName": "Lívia 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "09/09/2012", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 22/04 seus sonhos? Diz ter muitos sonhos, sendo um deles ser professora.", "project": "Ser professora de geografia e tecnologia, pois gosta desses componentes.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-17", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na minhas faltas? construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus EXCELENTE! 07:15 interesses, metas para o futuro e os caminhos necessários para alcançá-las. Atendimento com o ATENÇÃO! responsável? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e BUSCA ATIVA! ( ) Sim ( )Não profissional, destacando a importância do compromisso com os estudos, da dedicação e da O que devo fazer? construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "A estudante apresentou bastante dificuldade em Matemática, inclusive em operações básicas, BUSCA ATIVA! ( ) Sim ( )Não como adição. Como estratégia de apoio, foi orientada na realização de atividades na plataforma O que devo fazer? Matific, recebendo acompanhamento e auxílio durante a execução das propostas. Também foi oferecido como recurso pedagógico o material dourado, buscando favorecer a compreensão dos conceitos matemáticos de forma concreta e visual, contribuindo para o desenvolvimento da aprendizagem e da autonomia da estudante.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s9", "name": "LAURYN HILARY DE OLIVEIRA TEODORO", "internalName": "LAURYN HILARY DE OLIVEIRA TEODORO", "ra": "1200797176", "turma": "6B", "pass": "4947", "club": "Beach Tênis", "elective": "", "source": "documentos/09_LAURYN_6B.pdf", "sourceName": "LAURYN 6B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "", "project": "Estudar, fazer faculdade.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:20 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre as expectativas em relação à Prova Paulista e a importância EXCELENTE! da dedicação aos estudos para alcançar bons resultados. Também dialogamos sobre projeto de 07:20 Atendimento com o responsável? vida e perspectivas para o futuro. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! A estudante demonstrou-se muito animada e participativa durante a conversa. Relatou gostar das O que devo fazer? disciplinas de Matemática e Ciências e compartilhou o sonho de se tornar professora de Matemática, demonstrando interesse pelos estudos e motivação em relação aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s10", "name": "LORENA PEIXOTO MOLINA", "internalName": "LORENA PEIXOTO MOLINA", "ra": "1147866570", "turma": "7B", "pass": "6691", "club": "Teatro e dança", "elective": "", "source": "documentos/10_Lorena_7B.pdf", "sourceName": "Lorena 7B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:20 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância EXCELENTE! da continuidade dos estudos após a educação básica, com destaque para a UNESP como 07:30 Atendimento com o responsável? possibilidade de formação acadêmica. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O que devo fazer? O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s11", "name": "LUIZA DE OLIVEIRA ALVES", "internalName": "LUIZA DE OLIVEIRA ALVES", "ra": "115791484", "turma": "7A", "pass": "3095", "club": "Volei", "elective": "Fundamentos de", "source": "documentos/11_Lu_za_7A.pdf", "sourceName": "Luíza 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 28/04 seus sonhos? Fazer viagens internacionais.", "project": "Ser biologa", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamo", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância EXCELENTE! da continuidade dos estudos após a educação básica, com destaque para a UNESP como 07:20 Atendimento com o responsável? possibilidade de formação acadêmica. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O que devo fazer? O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s12", "name": "MARIAH MARCELINO LUIZ", "internalName": "ANA FLÁVIA SILVA PAVONI", "ra": "0001208161209", "turma": "8A", "pass": "1649", "club": "Desenho", "elective": "", "source": "documentos/12_MARIAH_MARCELINO_LUIZ_8A.pdf", "sourceName": "MARIAH MARCELINO LUIZ 8A.pdf", "warnings": ["Nome do arquivo: MARIAH MARCELINO LUIZ; nome dentro da ficha: ANA FLÁVIA SILVA PAVONI. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 09/06 seus sonhos? Ver um show de k-pop", "project": "Ser advogada ou psicóloga.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:40 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre sonhos, projeto de vida e perspectivas para o futuro, EXCELENTE! incentivando a estudante a refletir sobre seus objetivos pessoais e acadêmicos. Também 07:19 Atendimento com o responsável? dialogamos sobre a Prova Paulista, destacando a importância do comprometimento com os ATENÇÃO! ( ) Sim ( )Não estudos e da participação nas avaliações. BUSCA ATIVA!", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s13", "name": "MARCOS VINÍCIUS", "internalName": "MARCOS GABRIEL SILVA FALCÃO", "ra": "1201292013", "turma": "8B", "pass": "2663", "club": "não se lembra", "elective": "DuCarmo", "source": "documentos/13_Marcos_Vin_cius_7B.pdf", "sourceName": "Marcos Vinícius 7B.pdf", "warnings": ["Nome do arquivo: Marcos Vinícius; nome dentro da ficha: MARCOS GABRIEL SILVA FALCÃO. Conferir cadastro.", "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "16/12/2013", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser agricultor seus sonhos?", "project": "Ser agricultor.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na EXCELENTE! construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus 07:40 Atendimento com o responsável? interesses, metas para o futuro e os caminhos necessários para alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-29", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s14", "name": "MAYA FERNANDA ALVES RIBEIRO", "internalName": "MAYA FERNANDA ALVES RIBEIRO", "ra": "1161119498", "turma": "7A", "pass": "4025", "club": "", "elective": "", "source": "documentos/14_Maya_7A.pdf", "sourceName": "Maya 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 28/04 ir para a seus sonhos? Irlanda pois tem neve.", "project": "Paleontologia ou Herbetologia", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na EXCELENTE! construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus 07:16 Atendimento com o responsável? interesses, metas para o futuro e os caminhos necessários para alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação BUSCA ATIVA! ao seu desempenho escolar e aos seus objetivos futuros. O que devo fazer?", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s15", "name": "MIGUEL NEVES PEREIRA BARBOZA", "internalName": "MIGUEL NEVES PEREIRA BARBOZA", "ra": "1151397787", "turma": "8B", "pass": "2957", "club": "", "elective": "Futebol (Patrese)", "source": "documentos/15_Miguel_Neves_8B.pdf", "sourceName": "Miguel Neves 8B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "futebol", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s16", "name": "Nattan José Garcia da Silva", "internalName": "Nattan José Garcia da Silva", "ra": "", "turma": "9A", "pass": "—", "club": "Ping Pong", "elective": "Patrese", "source": "documentos/16_Nattan_Jos_9A.pdf", "sourceName": "Nattan José 9A.pdf", "warnings": ["RA não consta na ficha. O login do estudante ficará pendente até o RA ser informado."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Viajar pelo mundo", "project": "ganha bem.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s17", "name": "OSVALDO SOARES", "internalName": "Oswaldo Soares Silva Júnior", "ra": "1141736640", "turma": "8B", "pass": "1602", "club": "Sustentabilidade", "elective": "Robótica", "source": "documentos/17_Osvaldo_Soares_9B.pdf", "sourceName": "Osvaldo Soares 9B.pdf", "warnings": ["Nome do arquivo: Osvaldo Soares; nome dentro da ficha: Oswaldo Soares Silva Júnior. Conferir cadastro.", "Turma no arquivo: 9B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "19/12/2011", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "estudante gosta e já lida com isso pois a família atua no ramo.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s18", "name": "OTÁVIO AUGUSTO DE PAULA SILVA", "internalName": "OTÁVIO AUGUSTO DE PAULA SILVA", "ra": "0001141140135", "turma": "8A", "pass": "1768", "club": "Jogos de mesa", "elective": "Eu e os robôs", "source": "documentos/18_Ot_vio_Augusto_8A.pdf", "sourceName": "Otávio Augusto 8A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Viajar pelo mundo, seus sonhos? constituir família e ser feliz", "project": "Programador", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s19", "name": "RAFAEL YURI", "internalName": "RAPHAEL YURI DOS SANTOS DE SOUZA", "ra": "0001153572898", "turma": "8A", "pass": "3490", "club": "Esporte", "elective": "Ana Paula e Hermano", "source": "documentos/19_Rafael_Yuri_8A.pdf", "sourceName": "Rafael Yuri 8A.pdf", "warnings": ["Nome do arquivo: Rafael Yuri; nome dentro da ficha: RAPHAEL YURI DOS SANTOS DE SOUZA. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Viajar 07/04/2026", "project": "Agronegócios pois mora no sítio desde que nasceu", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}]};
+
+function seed(){if(!localStorage.getItem(DBKEY)) localStorage.setItem(DBKEY,JSON.stringify(INITIAL_DATA));}
+function ensureAttendanceBuckets(s){
+  const keys=['1º Bimestre','2º Bimestre','3º Bimestre','4º Bimestre'];
+  if(!s.atendimentosPorBimestre || typeof s.atendimentosPorBimestre!=='object') s.atendimentosPorBimestre={};
+  keys.forEach(k=>{if(!Array.isArray(s.atendimentosPorBimestre[k]))s.atendimentosPorBimestre[k]=[];});
+  if(Array.isArray(s.attendances) && s.attendances.length){
+    s.attendances.forEach(a=>{
+      const k=canonicalBim(a.bim);
+      if(!s.atendimentosPorBimestre[k].some(x=>x.id===a.id)) s.atendimentosPorBimestre[k].push({...a,bim:k});
+    });
+    s.attendances=[];
+  }
+
+  // Correção retroativa: atendimentos feitos de 31/08/2026 até 03/09/2026
+  // pertencem ao 3º bimestre, mesmo que versões anteriores tenham salvo no 1º.
+  const inicioTerceiro='2026-08-31', fimCorrecao='2026-09-03';
+  const mover=[];
+  keys.forEach(k=>{
+    s.atendimentosPorBimestre[k]=(s.atendimentosPorBimestre[k]||[]).filter(a=>{
+      const data=String(a.date||'').slice(0,10);
+      if(data>=inicioTerceiro && data<=fimCorrecao){ mover.push({...a,bim:'3º Bimestre'}); return false; }
+      return true;
+    });
+  });
+  mover.forEach(a=>{
+    const lista=s.atendimentosPorBimestre['3º Bimestre'];
+    const i=lista.findIndex(x=>x.id===a.id);
+    if(i>=0) lista[i]=a; else lista.push(a);
+  });
+
+  return s.atendimentosPorBimestre;
+}
+function allAttendances(s){
+  const b=ensureAttendanceBuckets(s);
+  return ['1º Bimestre','2º Bimestre','3º Bimestre','4º Bimestre'].flatMap(k=>b[k]||[]);
+}
+function getData(){
+  const d=JSON.parse(localStorage.getItem(DBKEY)||'{"students":[]}');
+  let migrated=false;
+  (d.students||[]).forEach(s=>{
+    const before=JSON.stringify(s.atendimentosPorBimestre||null)+(Array.isArray(s.attendances)?s.attendances.length:'');
+    ensureAttendanceBuckets(s);
+    const after=JSON.stringify(s.atendimentosPorBimestre||null)+(Array.isArray(s.attendances)?s.attendances.length:'');
+    if(before!==after)migrated=true;
+  });
+  if(migrated)localStorage.setItem(DBKEY,JSON.stringify(d));
+  return d;
+}function setData(d){localStorage.setItem(DBKEY,JSON.stringify(d))}
+function studentLogin(){
+ const s=getData().students.find(x=>x.ra===ra.value.trim()&&x.pass===pass.value);
+ if(!s)return alert('RA ou senha inválidos.');
+ studentId=s.id;isTutor=false;login.classList.add('hidden');app.classList.remove('hidden');renderStudent();openSec('home');
+}
+function logout(){if(isTutor){window.location.href='index.html';return;}studentId=null;app.classList.add('hidden');login.classList.remove('hidden')}
+function me(){return getData().students.find(x=>x.id===studentId)}
+function openSec(id){
+ document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+ const el=document.getElementById(id);if(el)el.classList.add('active');
+ if(id==='boletim')renderBulletins();
+ if(id==='acompanhamento')fillFollowForm();
+}
+function renderStudent(){
+ const s=me();if(!s)return;
+ hello.textContent=s.name;
+ meta.textContent=`${s.turma} • RA ${s.ra||'PENDENTE'}${s.club?' • Clube: '+s.club:''}${s.elective?' • Eletiva: '+s.elective:''}`;
+ ensureFeStructure(s);
+ fillFeForm();
+ if(s.source){sourcePdf.href=s.source;sourcePdf.classList.remove('hidden')}else sourcePdf.classList.add('hidden');
+ tutorNotice.classList.toggle('hidden',!isTutor);
+ if(window.tutorFollowNotice)tutorFollowNotice.classList.toggle('hidden',!isTutor);
+ teacherGradeArea.classList.toggle('hidden',!isTutor);
+ studentUploadArea.classList.toggle('hidden',isTutor);
+ feSaveArea.classList.toggle('hidden',isTutor);
+ newAttendanceBtn.classList.toggle('hidden',!isTutor);
+ document.querySelector('.top .pill').textContent=isTutor?'Visão do Tutor':'Tutoria 2026';
+ document.querySelector('.top button').textContent=isTutor?'← Painel do Tutor':'Sair';
+ document.querySelectorAll('#fe1 input,#fe1 textarea').forEach(el=>el.readOnly=isTutor);
+ fillFollowForm();
+}
+
+const ADVANCED_QUESTIONS=[["likes", "Principais gostos e preferências do tutorado"], ["virtues", "Principais virtudes / características positivas do tutorado"], ["skills", "Principais habilidades do tutorado"], ["positivePoints", "Os três principais pontos positivos atuais do tutorado"], ["positiveActions", "O que fazer sobre os pontos positivos atuais do tutorado"], ["fragilities", "Principais fragilidades / vulnerabilidades do tutorado"], ["attentionPoints", "Os três principais pontos de atenção"], ["attentionActions", "O que fazer sobre os pontos de atenção"], ["attentionDont", "O que NÃO fazer sobre os pontos de atenção"], ["agreementsDo", "Combinados com o tutorado sobre o que fazer e quando fazer"], ["agreementsDont", "Combinados com o tutorado sobre o que NÃO fazer"], ["academicPriorities", "Prioridades para o desenvolvimento acadêmico"], ["academicAgreements", "Combinados com o tutorado sobre o que fazer para melhorar o desenvolvimento acadêmico"], ["protagonismPriorities", "Prioridades para o desenvolvimento do Protagonismo Juvenil"], ["protagonismAgreements", "Combinados com o tutorado sobre o que fazer para melhorar o desenvolvimento do Protagonismo Juvenil"], ["educatorAgreements", "Combinados com os educadores sobre o que fazer e o que não fazer com o tutorado"]];
+
+function calculateBimCompletion(basic,advanced,questions){
+  const completedByBim={};
+  const missingByBim={};
+  for(let b=1;b<=4;b++){
+    const missing=[];
+    if(!String(basic?.dreams?.[b]||'').trim()) missing.push('Sonhos');
+    if(!String(basic?.projects?.[b]||'').trim()) missing.push('Projeto de Vida');
+    questions.forEach(([key,label])=>{
+      if(!String(advanced?.[b]?.[key]||'').trim()) missing.push(label);
+    });
+    completedByBim[b]=missing.length===0;
+    missingByBim[b]=missing;
+  }
+  return {completedByBim,missingByBim,completed:Object.values(completedByBim).every(Boolean)};
+}
+
+function applyFeCompletion(fe,questions=ADVANCED_QUESTIONS){
+  const status=calculateBimCompletion(fe.basic||{},fe.advanced||{},questions);
+  fe.completedByBim=status.completedByBim;
+  fe.completed=status.completed;
+  fe.missingByBim=status.missingByBim;
+  return fe;
+}
+
+
+function ensureFeStructure(s){
+  const old=s.fe1||{};
+  if(old.basic && old.advanced) return applyFeCompletion(old);
+
+  const basic={
+    club1:s.club||old.club1||'',
+    club2:old.club2||'',
+    dob:old.dob||'',
+    birthplace:old.city||old.birthplace||'',
+    address:old.address||'',
+    phone:old.phone||'',
+    guardian:old.guardian||'',
+    father:old.father||'',
+    mother:old.mother||'',
+    siblings:old.siblings||'',
+    otherFamily:old.family||old.otherFamily||'',
+    history:old.about||old.history||'',
+    familyProfile:old.familyProfile||'',
+    dreams:{1:old.dream||'',2:'',3:'',4:''},
+    projects:{1:old.project||'',2:'',3:'',4:''}
+  };
+
+  const advanced={};
+  for(let b=1;b<=4;b++){
+    advanced[b]={};
+    ADVANCED_QUESTIONS.forEach(([key])=>advanced[b][key]='');
+  }
+  if(old.likes) advanced[1].likes=old.likes;
+  if(old.virtues) advanced[1].virtues=old.virtues;
+  if(old.skills) advanced[1].skills=old.skills;
+
+  s.fe1=applyFeCompletion({completed:false,basic,advanced});
+  return s.fe1;
+}
+
+function buildAdvancedBimPanels(){
+  const container=document.getElementById('advancedBimContainer');
+  if(!container)return;
+  container.innerHTML='';
+  for(let b=1;b<=4;b++){
+    const panel=document.createElement('div');
+    panel.id='advancedBim'+b;
+    panel.className='fe-bim-panel'+(b===1?' active':'');
+    panel.innerHTML=ADVANCED_QUESTIONS.map(([key,label])=>`
+      <div class="question-card">
+        <label>${label} — ${b}º bimestre</label>
+        <textarea id="adv_${key}_${b}" data-fe-field></textarea>
+      </div>`).join('');
+    container.appendChild(panel);
+  }
+}
+
+let activeFeBim=1;
+let activeFollowBim=1;
+function showBasicBim(b,btn){
+  activeFeBim=b;
+  document.querySelectorAll('#basicBimTabs .fe-tab').forEach(x=>x.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  for(let i=1;i<=4;i++)document.getElementById('basicBim'+i)?.classList.toggle('active',i===b);
+  // Mantém o questionário avançado no mesmo bimestre para que a porcentagem represente um único período.
+  const advBtn=document.querySelectorAll('#advancedBimTabs .fe-tab')[b-1];
+  document.querySelectorAll('#advancedBimTabs .fe-tab').forEach(x=>x.classList.remove('active')); if(advBtn)advBtn.classList.add('active');
+  for(let i=1;i<=4;i++)document.getElementById('advancedBim'+i)?.classList.toggle('active',i===b);
+  updateFeProgress();
+}
+function showAdvancedBim(b,btn){
+  activeFeBim=b;
+  document.querySelectorAll('#advancedBimTabs .fe-tab').forEach(x=>x.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  for(let i=1;i<=4;i++)document.getElementById('advancedBim'+i)?.classList.toggle('active',i===b);
+  const basicBtn=document.querySelectorAll('#basicBimTabs .fe-tab')[b-1];
+  document.querySelectorAll('#basicBimTabs .fe-tab').forEach(x=>x.classList.remove('active')); if(basicBtn)basicBtn.classList.add('active');
+  for(let i=1;i<=4;i++)document.getElementById('basicBim'+i)?.classList.toggle('active',i===b);
+  updateFeProgress();
+}
+
+function fillFeForm(){
+  const s=me(); if(!s)return;
+  const f=ensureFeStructure(s),b=f.basic||{};
+  feClub1.value=b.club1||'';
+  feClub2.value=b.club2||'';
+  feDob.value=b.dob||'';
+  feBirthplace.value=b.birthplace||'';
+  feAddress.value=b.address||'';
+  fePhone.value=b.phone||'';
+  feGuardian.value=b.guardian||'';
+  feFather.value=b.father||'';
+  feMother.value=b.mother||'';
+  feSiblings.value=b.siblings||'';
+  feOtherFamily.value=b.otherFamily||'';
+  feHistory.value=b.history||'';
+  feFamilyProfile.value=b.familyProfile||'';
+  for(let i=1;i<=4;i++){
+    document.getElementById('feDream'+i).value=b.dreams?.[i]||'';
+    document.getElementById('feProject'+i).value=b.projects?.[i]||'';
+    ADVANCED_QUESTIONS.forEach(([key])=>{
+      const el=document.getElementById(`adv_${key}_${i}`);
+      if(el)el.value=f.advanced?.[i]?.[key]||'';
+    });
+  }
+  updateFeProgress();
+}
+
+function readFeForm(completed){
+  const basic={
+    club1:feClub1.value.trim(),
+    club2:feClub2.value.trim(),
+    dob:feDob.value.trim(),
+    birthplace:feBirthplace.value.trim(),
+    address:feAddress.value.trim(),
+    phone:fePhone.value.trim(),
+    guardian:feGuardian.value.trim(),
+    father:feFather.value.trim(),
+    mother:feMother.value.trim(),
+    siblings:feSiblings.value.trim(),
+    otherFamily:feOtherFamily.value.trim(),
+    history:feHistory.value.trim(),
+    familyProfile:feFamilyProfile.value.trim(),
+    dreams:{},
+    projects:{}
+  };
+  for(let i=1;i<=4;i++){
+    basic.dreams[i]=document.getElementById('feDream'+i).value.trim();
+    basic.projects[i]=document.getElementById('feProject'+i).value.trim();
+  }
+
+  const advanced={};
+  for(let i=1;i<=4;i++){
+    advanced[i]={};
+    ADVANCED_QUESTIONS.forEach(([key])=>{
+      advanced[i][key]=(document.getElementById(`adv_${key}_${i}`)?.value||'').trim();
+    });
+  }
+  return applyFeCompletion({completed:false,basic,advanced});
+}
+
+function getFeBimProgress(b=activeFeBim){
+  const ids=[`feDream${b}`,`feProject${b}`,...ADVANCED_QUESTIONS.map(([key])=>`adv_${key}_${b}`)];
+  const fields=ids.map(id=>document.getElementById(id)).filter(Boolean);
+  const total=fields.length,filled=fields.filter(x=>String(x.value||'').trim()).length;
+  return {total,filled,pct:total?Math.round(filled*100/total):0};
+}
+function updateFeProgress(){
+  const {total,filled,pct}=getFeBimProgress(activeFeBim);
+  if(window.feProgressBar)feProgressBar.style.width=pct+'%';
+  if(window.feProgressText)feProgressText.textContent=`${activeFeBim}º bimestre: ${pct}% preenchido (${filled} de ${total} itens)`;
+}
+
+function saveFe(completed){
+  const d=getData(),s=d.students.find(x=>x.id===studentId);
+  s.fe1=readFeForm(completed);
+  // Mantém o campo "club" compatível com o painel antigo.
+  if(s.fe1.basic.club1)s.club=s.fe1.basic.club1;
+  setData(d);
+  updateFeProgress();
+  if(completed){
+    const completos=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
+    const pendentes=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
+    alert(pendentes?`Ficha salva. Bimestre(s) completo(s): ${completos||'nenhum'}. Ainda pendente(s): ${pendentes}. Um bimestre só é considerado preenchido quando TODAS as perguntas dele forem respondidas.`:'Ficha anual completa e enviada ao tutor!');
+  }else alert('Rascunho da FE1 salvo.');
+}
+
+async function uploadBulletin(){
+ const file=bFile.files[0];
+ if(!file)return alert('Selecione um arquivo PDF.');
+ if(file.type!=='application/pdf')return alert('Envie apenas arquivos PDF.');
+ const d=getData(),s=d.students.find(x=>x.id===studentId);s.boletins=s.boletins||[];
+ let existing=s.boletins.find(x=>x.bim===bBim.value);
+ if(existing){
+   existing.name=file.name;existing.date=new Date().toISOString();
+ }else{
+   existing={id:'b'+Date.now(),bim:bBim.value,name:file.name,date:new Date().toISOString(),notas:{}};
+   s.boletins.push(existing);
+ }
+ try{await savePdfBlob(existing.id,file)}catch(e){console.error(e)}
+ setData(d);bFile.value='';renderBulletins();alert('Boletim em PDF enviado com sucesso.');
+}
+function bimNumber(b){return parseInt(String(b).match(/\d/)?.[0]||'9')}
+function average(notes){
+ const vals=Object.values(notes||{}).map(Number).filter(v=>Number.isFinite(v));
+ return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null
+}
+function renderBulletins(){
+ const s=me(),items=[...(s.boletins||[])].sort((a,b)=>bimNumber(a.bim)-bimNumber(b.bim));
+ bulletinList.innerHTML=items.length?`<h3>Boletins disponíveis</h3>`+items.map(b=>`<div class="item">📄 <b>${b.bim}</b><div class="sub">${b.name||'Boletim registrado'}${average(b.notas)!=null?' • Média registrada: '+average(b.notas).toFixed(2):''}</div></div>`).join(''):'<div class="item"><b>Nenhum boletim enviado ainda.</b><div class="sub">Assim que os boletins forem registrados, eles aparecerão aqui por bimestre.</div></div>';
+ renderBulletinAnalysis(items);
+}
+function renderBulletinAnalysis(items){
+ const withGrades=items.filter(b=>average(b.notas)!=null).sort((a,b)=>bimNumber(a.bim)-bimNumber(b.bim));
+ if(withGrades.length<2){
+  bulletinAnalysis.innerHTML=`<div class="analysis-box"><h3>Análise de evolução</h3><p class="sub">Para calcular evolução ou involução automaticamente, o sistema precisa de notas estruturadas de pelo menos dois bimestres. O PDF continua sendo o documento original.</p></div>`;
+  return;
+ }
+ const prev=withGrades[withGrades.length-2],cur=withGrades[withGrades.length-1];
+ const p=average(prev.notas),c=average(cur.notas),diff=c-p;
+ let cls='analysis-stable',title='Desempenho estável ↔';
+ if(diff>0.05){cls='analysis-up';title='Evolução identificada ↑'}
+ if(diff<-0.05){cls='analysis-down';title='Involução identificada ↓'}
+ const subjects=[...new Set([...Object.keys(prev.notas||{}),...Object.keys(cur.notas||{})])].sort();
+ const rows=subjects.map(sub=>{
+  const a=Number(prev.notas?.[sub]),b=Number(cur.notas?.[sub]),ha=Number.isFinite(a),hb=Number.isFinite(b);
+  let trend='—';
+  if(ha&&hb){const d=b-a;trend=d>0.05?'↑ Evoluiu':d<-0.05?'↓ Caiu':'↔ Estável'}
+  return `<tr><td><b>${sub}</b></td><td>${ha?a.toFixed(1):'—'}</td><td>${hb?b.toFixed(1):'—'}</td><td>${trend}</td></tr>`
+ }).join('');
+ bulletinAnalysis.innerHTML=`<div class="analysis-box"><h3>Análise de evolução</h3><div class="${cls}"><b>${title}</b><div style="margin-top:5px">${prev.bim}: média ${p.toFixed(2)} → ${cur.bim}: média ${c.toFixed(2)} (${diff>=0?'+':''}${diff.toFixed(2)})</div></div><table class="grade-table"><thead><tr><th>Componente</th><th>${prev.bim}</th><th>${cur.bim}</th><th>Evolução</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function saveGrades(){
+ const text=gNotes.value.trim();
+ if(!text)return alert('Digite pelo menos uma disciplina e uma nota.');
+ const notes={};
+ text.split(/\n+/).forEach(line=>{
+  const parts=line.split(':');if(parts.length<2)return;
+  const subject=parts.shift().trim(),value=Number(parts.join(':').trim().replace(',','.'));
+  if(subject&&Number.isFinite(value))notes[subject]=value
+ });
+ if(!Object.keys(notes).length)return alert('Não consegui identificar as notas. Use o formato Disciplina: nota.');
+ const d=getData(),s=d.students.find(x=>x.id===studentId);s.boletins=s.boletins||[];
+ let b=s.boletins.find(x=>x.bim===gBim.value);
+ if(!b){b={id:'b'+Date.now(),bim:gBim.value,name:'Notas registradas pelo tutor',date:new Date().toISOString(),notas:{}};s.boletins.push(b)}
+ b.notas=notes;setData(d);gNotes.value='';renderBulletins();alert('Notas salvas. A análise foi atualizada.');
+}
+
+const FOLLOW_ADVANCED=[["likes", "Principais gostos e preferências do tutorado"], ["virtues", "Principais virtudes / características positivas do tutorado"], ["skills", "Principais habilidades do tutorado"], ["positivePoints", "Os três principais pontos positivos atuais do tutorado"], ["positiveActions", "O que fazer sobre os pontos positivos atuais do tutorado"], ["fragilities", "Principais fragilidades / vulnerabilidades do tutorado"], ["attentionPoints", "Os três principais pontos de atenção"], ["attentionActions", "O que fazer sobre os pontos de atenção"], ["attentionDont", "O que NÃO fazer sobre os pontos de atenção"], ["agreementsDo", "Combinados com o tutorado sobre o que fazer e quando fazer"], ["agreementsDont", "Combinados com o tutorado sobre o que NÃO fazer"], ["academicPriorities", "Prioridades para o desenvolvimento acadêmico"], ["academicAgreements", "Combinados com o tutorado sobre o que fazer para melhorar o desenvolvimento acadêmico"], ["protagonismPriorities", "Prioridades para o desenvolvimento do Protagonismo Juvenil"], ["protagonismAgreements", "Combinados com o tutorado sobre o que fazer para melhorar o desenvolvimento do Protagonismo Juvenil"], ["educatorAgreements", "Combinados com os educadores sobre o que fazer e o que não fazer com o tutorado"]];
+
+function ensureFollowStructure(s){
+  const old=s.fe1||{};
+  if(old.basic && old.advanced) return applyFeCompletion(old,FOLLOW_ADVANCED);
+
+  const basic={
+    club1:s.club||old.club1||'',
+    club2:old.club2||'',
+    dob:old.dob||'',
+    birthplace:old.city||old.birthplace||'',
+    address:old.address||'',
+    phone:old.phone||'',
+    guardian:old.guardian||'',
+    father:old.father||'',
+    mother:old.mother||'',
+    siblings:old.siblings||'',
+    otherFamily:old.family||old.otherFamily||'',
+    history:old.about||old.history||'',
+    familyProfile:old.familyProfile||'',
+    dreams:{1:old.dream||'',2:'',3:'',4:''},
+    projects:{1:old.project||'',2:'',3:'',4:''}
+  };
+  const advanced={};
+  for(let b=1;b<=4;b++){
+    advanced[b]={};
+    FOLLOW_ADVANCED.forEach(([key])=>advanced[b][key]='');
+  }
+  if(old.likes)advanced[1].likes=old.likes;
+  if(old.virtues)advanced[1].virtues=old.virtues;
+  if(old.skills)advanced[1].skills=old.skills;
+
+  s.fe1=applyFeCompletion({completed:false,basic,advanced},FOLLOW_ADVANCED);
+  return s.fe1;
+}
+
+function buildFollowBims(){
+  const host=document.getElementById('followBimContainer');
+  if(!host)return;
+  host.innerHTML='';
+  for(let b=1;b<=4;b++){
+    const sec=document.createElement('div');
+    sec.id='follow'+b;
+    sec.className='follow-section';
+    sec.innerHTML=`
+      <div class="follow-level" style="border-top:0;margin-top:0;padding-top:0">
+        <h3>Nível básico — ${b}º bimestre</h3>
+        <div class="follow-question">
+          <label>Sonhos — quais os caminhos que levam você para a realização dos seus sonhos?</label>
+          <textarea id="faDream${b}"></textarea>
+        </div>
+        <div class="follow-question">
+          <label>Projeto de Vida — justificativa</label>
+          <textarea id="faProject${b}"></textarea>
+        </div>
+      </div>
+
+      <div class="follow-level">
+        <h3>Nível avançado — ${b}º bimestre</h3>
+        ${FOLLOW_ADVANCED.map(([key,label],i)=>`
+          <div class="follow-question">
+            <label>${7+i}. ${label}</label>
+            <textarea id="fa_${key}_${b}"></textarea>
+          </div>`).join('')}
+      </div>`;
+    host.appendChild(sec);
+  }
+}
+
+function backFromFollow(){
+  if(isTutor){ window.location.href='index.html'; }
+  else { openSec('home'); }
+}
+function showFollowTab(id,btn){
+  const m=String(id).match(/^follow([1-4])$/); if(m)activeFollowBim=Number(m[1]);
+  document.querySelectorAll('#acompanhamento .follow-section').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('#followTabs button').forEach(x=>x.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  updateFollowProgress();
+}
+
+function fillFollowForm(){
+  const s=me();if(!s)return;
+  const f=ensureFollowStructure(s),b=f.basic||{};
+  faClub1.value=b.club1||''; faClub2.value=b.club2||'';
+  faDob.value=b.dob||''; faBirthplace.value=b.birthplace||''; faAddress.value=b.address||''; faPhone.value=b.phone||'';
+  faGuardian.value=b.guardian||''; faFather.value=b.father||''; faMother.value=b.mother||''; faSiblings.value=b.siblings||''; faOtherFamily.value=b.otherFamily||'';
+  faHistory.value=b.history||''; faFamilyProfile.value=b.familyProfile||'';
+  for(let i=1;i<=4;i++){
+    document.getElementById('faDream'+i).value=b.dreams?.[i]||'';
+    document.getElementById('faProject'+i).value=b.projects?.[i]||'';
+    FOLLOW_ADVANCED.forEach(([key])=>{
+      const el=document.getElementById(`fa_${key}_${i}`);
+      if(el)el.value=f.advanced?.[i]?.[key]||'';
+    });
+  }
+  if(isTutor){
+    document.querySelectorAll('#acompanhamento input,#acompanhamento textarea').forEach(el=>el.readOnly=true);
+    followSaveArea.classList.add('hidden');
+  } else {
+    followSaveArea.classList.remove('hidden');
+  }
+  updateFollowProgress();
+}
+
+function readFollowForm(completed){
+  const basic={
+    club1:faClub1.value.trim(), club2:faClub2.value.trim(),
+    dob:faDob.value.trim(), birthplace:faBirthplace.value.trim(), address:faAddress.value.trim(), phone:faPhone.value.trim(),
+    guardian:faGuardian.value.trim(), father:faFather.value.trim(), mother:faMother.value.trim(), siblings:faSiblings.value.trim(),
+    otherFamily:faOtherFamily.value.trim(), history:faHistory.value.trim(), familyProfile:faFamilyProfile.value.trim(),
+    dreams:{}, projects:{}
+  };
+  const advanced={};
+  for(let i=1;i<=4;i++){
+    basic.dreams[i]=document.getElementById('faDream'+i).value.trim();
+    basic.projects[i]=document.getElementById('faProject'+i).value.trim();
+    advanced[i]={};
+    FOLLOW_ADVANCED.forEach(([key])=>{
+      advanced[i][key]=(document.getElementById(`fa_${key}_${i}`)?.value||'').trim();
+    });
+  }
+  return applyFeCompletion({completed:false,basic,advanced},FOLLOW_ADVANCED);
+}
+
+function saveFollow(completed){
+  if(isTutor)return;
+  const d=getData(),s=d.students.find(x=>x.id===studentId); if(!s)return;
+  s.fe1=readFollowForm(completed);
+  if(s.fe1.basic.club1)s.club=s.fe1.basic.club1;
+  setData(d);
+  updateFollowProgress();
+  if(completed){
+    const completos=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
+    const pendentes=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
+    alert(pendentes?`Ficha salva. Bimestre(s) completo(s): ${completos||'nenhum'}. Ainda pendente(s): ${pendentes}. Um bimestre só é considerado preenchido quando TODAS as perguntas dele forem respondidas.`:'Ficha anual completa e enviada ao tutor!');
+  }else alert('Rascunho salvo.');
+}
+
+function updateFollowProgress(){
+  // Em Dados gerais, mostra apenas um aviso; nos bimestres, calcula somente os itens daquele período.
+  const active=document.querySelector('#followTabs button.active')?.textContent||'';
+  if(active.includes('Dados gerais')){
+    if(window.followProgressBar)followProgressBar.style.width='0%';
+    if(window.followProgressText)followProgressText.textContent='Selecione um bimestre para ver a porcentagem de preenchimento.';
+    return;
+  }
+  const panel=document.getElementById('follow'+activeFollowBim);
+  const fields=[...(panel?.querySelectorAll('input,textarea')||[])];
+  const total=fields.length,filled=fields.filter(x=>String(x.value||'').trim()).length;
+  const pct=total?Math.round(filled/total*100):0;
+  if(window.followProgressBar)followProgressBar.style.width=pct+'%';
+  if(window.followProgressText)followProgressText.textContent=`${activeFollowBim}º bimestre: ${pct}% preenchido (${filled} de ${total} itens)`;
+}
+
+function openBim(bim){currentBim=canonicalBim(bim);openSec('bimestre');bimHeading.textContent=`Atendimentos — ${bim}`;renderBim()}
+function renderBim(){
+ const s=me(),buckets=ensureAttendanceBuckets(s),items=[...(buckets[currentBim]||[])].sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+ bimAttendanceList.innerHTML=items.length?items.map(a=>`<div class="item"><small>${fmtDate(a.date)} ${a.time?'• '+a.time:''}${a.createdBy?' • registrado por '+a.createdBy:''}</small><h3 style="margin:7px 0">${a.nature||'Atendimento'}</h3><p>${a.summary||'Sem síntese registrada.'}</p>${a.action?`<p><b>O que deve fazer:</b> ${a.action}</p>`:''}${a.deal?`<p><b>Combinado:</b> ${a.deal}</p>`:''}<span class="status">${a.freq||''}</span></div>`).join(''):`<div class="item"><b>Nenhum atendimento registrado no ${currentBim.toLowerCase()}.</b></div>`;
+}
+function fmtDate(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—'}
+function goNewAttendance(){sessionStorage.setItem('tutoria_student_to_open',studentId);window.location.href='index.html'}
+seed();
+buildAdvancedBimPanels();
+buildFollowBims();
+document.addEventListener('input',e=>{if(e.target.closest && e.target.closest('#fe1'))updateFeProgress(); if(e.target.closest && e.target.closest('#acompanhamento'))updateFollowProgress();});
+(function bootProfile(){
+ const params=new URLSearchParams(window.location.search);
+ const sid=params.get('student');
+ const requestedSection=params.get('section');
+ if(sid){
+   const s=getData().students.find(x=>x.id===sid);
+   if(s){
+     studentId=sid;
+     isTutor=params.get('tutor')==='1';
+     login.classList.add('hidden');
+     app.classList.remove('hidden');
+     renderStudent();
+     if(requestedSection==='acompanhamento'){
+       openSec('acompanhamento');
+       fillFollowForm();
+     }else{
+       openSec('home');
+     }
+   }
+ }
+})();
+function refreshStudentView(){
+ if(!studentId)return;
+ const active=document.querySelector('.section.active')?.id;
+ renderStudent();
+ if(active==='acompanhamento') fillFollowForm();
+ if(active==='boletim') renderBulletins();
+ if(active==='bimestre') renderBim();
+}
+window.addEventListener('storage',e=>{if(!e.key||e.key===DBKEY)refreshStudentView();});
+window.addEventListener('focus',refreshStudentView);
+window.addEventListener('pageshow',refreshStudentView);
+</script>
+</body>
+</html>

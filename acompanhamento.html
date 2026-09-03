@@ -1,0 +1,4 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><script>
+const p=new URLSearchParams(location.search); const sid=p.get('student'); const tutor=p.get('tutor');
+location.replace('aluno.html'+(sid?'?student='+encodeURIComponent(sid)+(tutor==='1'?'&tutor=1':''):''));
+</script></head><body></body></html>

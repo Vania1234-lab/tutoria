@@ -1,0 +1,152 @@
+[
+  {
+    "name": "ANA FLÁVIA SILVA PAVONI",
+    "turma": "6B",
+    "ra": "115791553",
+    "pass": "8421",
+    "warnings": []
+  },
+  {
+    "name": "ARTHUR GUGLIEMONI",
+    "turma": "8B",
+    "ra": "1161127033",
+    "pass": "3245",
+    "warnings": [
+      "Nome do arquivo: Arthur Gugliemoni; nome dentro da ficha: ARTHUR GUGLIELMONI ALVES. Conferir cadastro.",
+      "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "CAIO DE FRANÇA LUQUE",
+    "turma": "8B",
+    "ra": "1136973746",
+    "pass": "9648",
+    "warnings": []
+  },
+  {
+    "name": "GUSTAVO HENRIQUE",
+    "turma": "8B",
+    "ra": "0001151253145",
+    "pass": "5212",
+    "warnings": [
+      "Turma no arquivo: 8A; turma dentro da ficha: 8B. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "HEITOR LUCAS DE OLIVEIRA SILVA FILHO",
+    "turma": "8B",
+    "ra": "116296246",
+    "pass": "9586",
+    "warnings": [
+      "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "ISABELA AZEVEDO DA SILVA",
+    "turma": "7A",
+    "ra": "1143747859",
+    "pass": "5477",
+    "warnings": []
+  },
+  {
+    "name": "JEAN LUCCA GOUVÊA DE OLIVEIRA",
+    "turma": "7B",
+    "ra": "1160067909",
+    "pass": "5619",
+    "warnings": []
+  },
+  {
+    "name": "LIVIA SOFIA DE ARAUJO COSTA",
+    "turma": "7A",
+    "ra": "1201565431",
+    "pass": "8213",
+    "warnings": []
+  },
+  {
+    "name": "LAURYN HILARY DE OLIVEIRA TEODORO",
+    "turma": "6B",
+    "ra": "1200797176",
+    "pass": "4947",
+    "warnings": []
+  },
+  {
+    "name": "LORENA PEIXOTO MOLINA",
+    "turma": "7B",
+    "ra": "1147866570",
+    "pass": "6691",
+    "warnings": []
+  },
+  {
+    "name": "LUIZA DE OLIVEIRA ALVES",
+    "turma": "7A",
+    "ra": "115791484",
+    "pass": "3095",
+    "warnings": []
+  },
+  {
+    "name": "MARIAH MARCELINO LUIZ",
+    "turma": "8A",
+    "ra": "0001208161209",
+    "pass": "1649",
+    "warnings": [
+      "Nome do arquivo: MARIAH MARCELINO LUIZ; nome dentro da ficha: ANA FLÁVIA SILVA PAVONI. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "MARCOS VINÍCIUS",
+    "turma": "8B",
+    "ra": "1201292013",
+    "pass": "2663",
+    "warnings": [
+      "Nome do arquivo: Marcos Vinícius; nome dentro da ficha: MARCOS GABRIEL SILVA FALCÃO. Conferir cadastro.",
+      "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "MAYA FERNANDA ALVES RIBEIRO",
+    "turma": "7A",
+    "ra": "1161119498",
+    "pass": "4025",
+    "warnings": []
+  },
+  {
+    "name": "MIGUEL NEVES PEREIRA BARBOZA",
+    "turma": "8B",
+    "ra": "1151397787",
+    "pass": "2957",
+    "warnings": []
+  },
+  {
+    "name": "Nattan José Garcia da Silva",
+    "turma": "9A",
+    "ra": "",
+    "pass": "—",
+    "warnings": []
+  },
+  {
+    "name": "OSVALDO SOARES",
+    "turma": "8B",
+    "ra": "1141736640",
+    "pass": "1602",
+    "warnings": [
+      "Nome do arquivo: Osvaldo Soares; nome dentro da ficha: Oswaldo Soares Silva Júnior. Conferir cadastro.",
+      "Turma no arquivo: 9B; turma dentro da ficha: 8B. Conferir cadastro."
+    ]
+  },
+  {
+    "name": "OTÁVIO AUGUSTO DE PAULA SILVA",
+    "turma": "8A",
+    "ra": "0001141140135",
+    "pass": "1768",
+    "warnings": []
+  },
+  {
+    "name": "RAFAEL YURI",
+    "turma": "8A",
+    "ra": "0001153572898",
+    "pass": "3490",
+    "warnings": [
+      "Nome do arquivo: Rafael Yuri; nome dentro da ficha: RAPHAEL YURI DOS SANTOS DE SOUZA. Conferir cadastro."
+    ]
+  }
+]
