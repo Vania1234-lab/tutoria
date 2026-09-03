@@ -408,6 +408,16 @@ function getData(){
   if(migrated)localStorage.setItem(DBKEY,JSON.stringify(d));
   return d;
 }function setData(d){localStorage.setItem(DBKEY,JSON.stringify(d))}
+// Salva SOMENTE a ficha do estudante informado, preservando integralmente os demais.
+function saveOnlyThisStudentFe(id,newFe){
+  const latest=getData();
+  const target=latest.students.find(x=>String(x.id)===String(id));
+  if(!target) throw new Error('Estudante não encontrado para salvar a ficha.');
+  target.fe1=JSON.parse(JSON.stringify(newFe));
+  if(target.fe1?.basic?.club1) target.club=target.fe1.basic.club1;
+  setData(latest);
+  return target.fe1;
+}
 function studentLogin(){
  const s=getData().students.find(x=>x.ra===ra.value.trim()&&x.pass===pass.value);
  if(!s)return alert('RA ou senha inválidos.');
@@ -616,15 +626,13 @@ function updateFeProgress(){
 }
 
 function saveFe(completed){
-  const d=getData(),s=d.students.find(x=>x.id===studentId);
-  s.fe1=readFeForm(completed);
-  // Mantém o campo "club" compatível com o painel antigo.
-  if(s.fe1.basic.club1)s.club=s.fe1.basic.club1;
-  setData(d);
+  if(!studentId)return;
+  const novaFicha=readFeForm(completed);
+  const fichaSalva=saveOnlyThisStudentFe(studentId,novaFicha);
   updateFeProgress();
   if(completed){
-    const completos=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
-    const pendentes=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
+    const completos=Object.entries(fichaSalva.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
+    const pendentes=Object.entries(fichaSalva.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
     alert(pendentes?`Ficha salva. Bimestre(s) completo(s): ${completos||'nenhum'}. Ainda pendente(s): ${pendentes}. Um bimestre só é considerado preenchido quando TODAS as perguntas dele forem respondidas.`:'Ficha anual completa e enviada ao tutor!');
   }else alert('Rascunho da FE1 salvo.');
 }
@@ -817,15 +825,13 @@ function readFollowForm(completed){
 }
 
 function saveFollow(completed){
-  if(isTutor)return;
-  const d=getData(),s=d.students.find(x=>x.id===studentId); if(!s)return;
-  s.fe1=readFollowForm(completed);
-  if(s.fe1.basic.club1)s.club=s.fe1.basic.club1;
-  setData(d);
+  if(isTutor||!studentId)return;
+  const novaFicha=readFollowForm(completed);
+  const fichaSalva=saveOnlyThisStudentFe(studentId,novaFicha);
   updateFollowProgress();
   if(completed){
-    const completos=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
-    const pendentes=Object.entries(s.fe1.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
+    const completos=Object.entries(fichaSalva.completedByBim||{}).filter(([,ok])=>ok).map(([b])=>b+'º').join(', ');
+    const pendentes=Object.entries(fichaSalva.completedByBim||{}).filter(([,ok])=>!ok).map(([b])=>b+'º').join(', ');
     alert(pendentes?`Ficha salva. Bimestre(s) completo(s): ${completos||'nenhum'}. Ainda pendente(s): ${pendentes}. Um bimestre só é considerado preenchido quando TODAS as perguntas dele forem respondidas.`:'Ficha anual completa e enviada ao tutor!');
   }else alert('Rascunho salvo.');
 }

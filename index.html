@@ -417,7 +417,9 @@ function showSection(id,btn){
 }
 const FE_BIM_KEYS=['likes','virtues','skills','positivePoints','positiveActions','fragilities','attentionPoints','attentionActions','attentionDont','agreementsDo','agreementsDont','academicPriorities','academicAgreements','protagonismPriorities','protagonismAgreements','educatorAgreements'];
 function professorFePercentages(s){
-  const f=ensureProfessorFe(s),b=f.basic||{},a=f.advanced||{};
+  // Cálculo isolado: usa exclusivamente uma cópia da ficha DESTE estudante.
+  // Isso impede qualquer referência compartilhada ou alteração acidental entre tutorados.
+  const f=JSON.parse(JSON.stringify(ensureProfessorFe(s)||{})),b=f.basic||{},a=f.advanced||{};
   const result={};
   for(let i=1;i<=4;i++){
     const values=[b.dreams?.[i],b.projects?.[i],...FE_BIM_KEYS.map(k=>a?.[i]?.[k])];
