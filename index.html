@@ -599,6 +599,13 @@ function toggleStudentPassword(id,btn){
   el.dataset.showing=showing?'0':'1';
   if(btn){btn.textContent=showing?'👁️':'🙈';btn.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');btn.title=showing?'Mostrar senha':'Ocultar senha';}
 }
+function toggleStudentPasswordEl(elementId,btn){
+  const el=document.getElementById(elementId);if(!el)return;
+  const showing=el.textContent!=='••••';
+  el.textContent=showing?'••••':(el.dataset.pass||'—');
+  if(btn){btn.textContent=showing?'👁️':'🙈';btn.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');btn.title=showing?'Mostrar senha':'Ocultar senha';}
+}
+
 function renderAccess(){
   const q=(accessSearch?.value||'').toLowerCase();
   const f=accessClassFilter?.value||'';
@@ -616,7 +623,7 @@ function copyText(txt){
 function renderStudents(){
   const q=(search.value||'').toLowerCase(), f=classFilter.value;
   const ss=getData().students.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.ra.toLowerCase().includes(q))&&(!f||s.turma===f));
-  studentsTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>RA / Login</th><th>Senha</th><th>FE1</th><th>Atend.</th><th>Arquivo</th><th></th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b>${s.warnings?.length?'<div class="status warn" title="'+s.warnings.join(' ')+'">⚠ Conferir ficha</div>':''}</td><td>${s.turma}</td><td><b>${s.ra||'PENDENTE'}</b></td><td><b>${s.pass}</b></td><td>${feBimStatus(s).html}</td><td>${allAttendances(s).length}</td><td><a class="mini" href="${s.source}" target="_blank">Abrir PDF</a></td><td><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+  studentsTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>RA / Login</th><th>Senha</th><th>FE1</th><th>Atend.</th><th>Arquivo</th><th></th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b>${s.warnings?.length?'<div class="status warn" title="'+s.warnings.join(' ')+'">⚠ Conferir ficha</div>':''}</td><td>${s.turma}</td><td><b>${s.ra||'PENDENTE'}</b></td><td><span class="student-pass"><span id="list-pass-${s.id}" class="credential" data-pass="${s.pass||''}">••••</span><button type="button" class="eye-mini" onclick="toggleStudentPasswordEl('list-pass-${s.id}',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></span></td><td>${feBimStatus(s).html}</td><td>${allAttendances(s).length}</td><td><a class="mini" href="${s.source}" target="_blank">Abrir PDF</a></td><td><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
 }
 function openStudent(id){
   const s=getData().students.find(x=>x.id===id);
@@ -660,7 +667,7 @@ function renderProfessorStudentProfile(){
   const s=getCurrentStudent();if(!s)return;
   profStudentName.textContent=s.name;
   profStudentMeta.textContent=`${s.turma} • RA ${s.ra||'PENDENTE'}`;
-  profStudentCredentials.innerHTML=`<span class="status">Login: <b>${s.ra||'PENDENTE'}</b></span><span class="status">Senha: <b>${s.pass||'—'}</b></span>`;
+  profStudentCredentials.innerHTML=`<span class="status">Login: <b>${s.ra||'PENDENTE'}</b></span><span class="status">Senha: <span class="student-pass"><b id="profile-pass-${s.id}" data-pass="${s.pass||''}">••••</b><button type="button" class="eye-mini" onclick="toggleStudentPasswordEl('profile-pass-${s.id}',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></span></span>`;
   document.querySelectorAll('#studentProfile .profile-env').forEach(x=>x.classList.remove('active'));
   renderProfessorFe();
 }
