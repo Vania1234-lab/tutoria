@@ -327,8 +327,94 @@
 
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
-const DBKEY='tutoria_data_v2';let studentId=null;let isTutor=false;let currentBim='1º Bimestre';
+const DBKEY='tutoria_data_v2';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBsNaB_4Y6txx6WBhFLpN3oybr4t9f07i0",
+  authDomain: "tutoria-7645e.firebaseapp.com",
+  projectId: "tutoria-7645e",
+  storageBucket: "tutoria-7645e.firebasestorage.app",
+  messagingSenderId: "662478152191",
+  appId: "1:662478152191:web:20e32d76224b7a27a107ca",
+  measurementId: "G-MBN79N65G3"
+};
+firebase.initializeApp(firebaseConfig);
+const firestore = firebase.firestore();
+let cloudReadyPromise=null;
+let cloudLastById=new Map();
+let cloudUnsubscribe=null;
+let cloudOnline=false;
+
+function rawLocalData(){
+  try{return JSON.parse(localStorage.getItem(DBKEY)||'{"students":[]}')}catch(e){return {students:[]}}
+}
+function rememberCloud(students){
+  cloudLastById=new Map((students||[]).map(s=>[String(s.id),JSON.stringify(s)]));
+}
+function applyCloudSnapshot(students){
+  const d={students:[...(students||[])]};
+  localStorage.setItem(DBKEY,JSON.stringify(d));
+  rememberCloud(d.students);
+  cloudOnline=true;
+}
+async function syncDataToCloud(d){
+  if(!firestore || !d?.students)return;
+  const tasks=[];
+  for(const s of d.students){
+    if(!s?.id)continue;
+    const now=JSON.stringify(s);
+    if(cloudLastById.get(String(s.id))!==now){
+      cloudLastById.set(String(s.id),now);
+      tasks.push(firestore.collection('students').doc(String(s.id)).set(JSON.parse(now)));
+    }
+  }
+  if(tasks.length){
+    try{await Promise.all(tasks);cloudOnline=true}catch(e){console.error('Falha ao sincronizar com o Firebase:',e);cloudOnline=false}
+  }
+}
+function startCloudListener(onChange){
+  if(cloudUnsubscribe)cloudUnsubscribe();
+  cloudUnsubscribe=firestore.collection('students').onSnapshot(snap=>{
+    const students=[];
+    snap.forEach(doc=>students.push({...doc.data(),id:doc.id}));
+    students.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    applyCloudSnapshot(students);
+    try{onChange&&onChange()}catch(e){console.error(e)}
+  },e=>{console.error('Falha na atualização em tempo real:',e);cloudOnline=false});
+}
+async function initCloudData(onChange){
+  try{
+    const snap=await firestore.collection('students').get();
+    if(snap.empty){
+      const local=rawLocalData();
+      if(local.students?.length){
+        const batch=firestore.batch();
+        for(const s of local.students){if(s?.id)batch.set(firestore.collection('students').doc(String(s.id)),s)}
+        await batch.commit();
+        rememberCloud(local.students);
+      }
+    }else{
+      const students=[];snap.forEach(doc=>students.push({...doc.data(),id:doc.id}));
+      students.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+      applyCloudSnapshot(students);
+    }
+    cloudOnline=true;
+    startCloudListener(onChange);
+    return true;
+  }catch(e){
+    console.error('Firebase indisponível; usando cópia local:',e);
+    cloudOnline=false;
+    return false;
+  }
+}
+async function ensureCloudReady(){
+  if(!cloudReadyPromise)cloudReadyPromise=Promise.resolve(false);
+  return cloudReadyPromise;
+}
+let studentId=null;let isTutor=false;let currentBim='1º Bimestre';
 function canonicalBim(v){const n=parseInt(String(v||'').match(/[1-4]/)?.[0]||'1',10);return `${n}º Bimestre`;}
 
 const FILE_DB='tutoria_pdf_store';
@@ -407,7 +493,7 @@ function getData(){
   });
   if(migrated)localStorage.setItem(DBKEY,JSON.stringify(d));
   return d;
-}function setData(d){localStorage.setItem(DBKEY,JSON.stringify(d))}
+}function setData(d){localStorage.setItem(DBKEY,JSON.stringify(d));syncDataToCloud(d)}
 // Salva SOMENTE a ficha do estudante informado, preservando integralmente os demais.
 function saveOnlyThisStudentFe(id,newFe){
   const latest=getData();
@@ -418,7 +504,8 @@ function saveOnlyThisStudentFe(id,newFe){
   setData(latest);
   return target.fe1;
 }
-function studentLogin(){
+async function studentLogin(){
+ await ensureCloudReady();
  const s=getData().students.find(x=>x.ra===ra.value.trim()&&x.pass===pass.value);
  if(!s)return alert('RA ou senha inválidos.');
  studentId=s.id;isTutor=false;login.classList.add('hidden');app.classList.remove('hidden');renderStudent();openSec('home');
@@ -863,7 +950,9 @@ seed();
 buildAdvancedBimPanels();
 buildFollowBims();
 document.addEventListener('input',e=>{if(e.target.closest && e.target.closest('#fe1'))updateFeProgress(); if(e.target.closest && e.target.closest('#acompanhamento'))updateFollowProgress();});
-(function bootProfile(){
+cloudReadyPromise=initCloudData(()=>refreshStudentView());
+(async function bootProfile(){
+ await ensureCloudReady();
  const params=new URLSearchParams(window.location.search);
  const sid=params.get('student');
  const requestedSection=params.get('section');
@@ -893,7 +982,7 @@ function refreshStudentView(){
  if(active==='bimestre') renderBim();
 }
 window.addEventListener('storage',e=>{if(!e.key||e.key===DBKEY)refreshStudentView();});
-window.addEventListener('focus',refreshStudentView);
+window.addEventListener('focus',async()=>{await ensureCloudReady();refreshStudentView()});
 window.addEventListener('pageshow',refreshStudentView);
 </script>
 </body>
