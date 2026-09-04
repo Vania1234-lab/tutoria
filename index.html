@@ -117,7 +117,9 @@
 .report-empty{color:#7a8494;font-style:italic}.report-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#edf8f4;color:#156b52;font-size:12px;font-weight:800;margin-right:6px}
 @media(max-width:760px){.report-controls,.report-grid{grid-template-columns:1fr}}
 
-  </style>
+  
+    .password-wrap{position:relative}.password-wrap input{padding-right:52px}.password-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:transparent;cursor:pointer;font-size:19px;display:grid;place-items:center}.password-eye:hover{background:#eef4f2}.password-eye:focus{outline:2px solid #79b9a7;outline-offset:2px}.student-pass{display:inline-flex;align-items:center;gap:7px}.student-pass .eye-mini{border:1px solid var(--line);background:#fff;border-radius:9px;padding:5px 7px;cursor:pointer;font-size:14px}
+</style>
 </head>
 <body>
 <section id="loginScreen" class="login">
@@ -125,7 +127,7 @@
     <div class="brand"><div class="logo">T</div><div><h2 style="margin:0">Tutoria Escolar</h2><div class="sub">Painel do Tutor</div></div></div>
     <p class="sub">Acompanhe fichas, boletins, atendimentos e combinados por estudante e por bimestre.</p>
     <label>Usuário</label><input id="loginUser" value="tutor">
-    <label>Senha</label><input id="loginPass" type="password" value="1234">
+    <label>Senha</label><div class="password-wrap"><input id="loginPass" type="password" value="1234"><button type="button" class="password-eye" onclick="togglePasswordField('loginPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div>
     <button class="btn btn-primary" onclick="login()">Entrar</button>
     <div class="hint">Versão conectada ao Firebase. Login provisório do tutor: tutor / 1234. Antes do uso definitivo, configuraremos autenticação segura.</div>
   </div>
@@ -251,7 +253,7 @@
           <div><label>Nome completo</label><input id="nsName"></div>
           <div><label>RA</label><input id="nsRa"></div>
           <div><label>Ano / série / turma</label><input id="nsClass" placeholder="Ex.: 6B"></div>
-          <div><label>Senha inicial</label><input id="nsPass" value="1234"></div>
+          <div><label>Senha inicial</label><div class="password-wrap"><input id="nsPass" type="password" value="1234"><button type="button" class="password-eye" onclick="togglePasswordField('nsPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div></div>
         </div>
         <div class="right"><button class="btn btn-primary" onclick="addStudent()">Cadastrar estudante</button></div>
       </div>
@@ -585,6 +587,18 @@ function downloadAccessExcel(){
   }
 }
 
+function togglePasswordField(inputId,btn){
+  const input=document.getElementById(inputId);if(!input)return;
+  const showing=input.type==='text';input.type=showing?'password':'text';
+  if(btn){btn.textContent=showing?'👁️':'🙈';btn.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');btn.title=showing?'Mostrar senha':'Ocultar senha';}
+}
+function toggleStudentPassword(id,btn){
+  const el=document.getElementById('pass-'+id);if(!el)return;
+  const showing=el.dataset.showing==='1';
+  el.textContent=showing?'••••':(el.dataset.pass||'—');
+  el.dataset.showing=showing?'0':'1';
+  if(btn){btn.textContent=showing?'👁️':'🙈';btn.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');btn.title=showing?'Mostrar senha':'Ocultar senha';}
+}
 function renderAccess(){
   const q=(accessSearch?.value||'').toLowerCase();
   const f=accessClassFilter?.value||'';
@@ -592,7 +606,7 @@ function renderAccess(){
     const hay=[s.name,s.ra,s.turma].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!f||s.turma===f);
   });
-  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Senha</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td><span class="credential">${s.pass||'—'}</span></td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="copyText('${s.pass||''}')">Copiar senha</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Senha</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td><span class="student-pass"><span id="pass-${s.id}" class="credential" data-pass="${s.pass||''}">••••</span><button type="button" class="eye-mini" onclick="toggleStudentPassword('${s.id}',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></span></td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="copyText('${s.pass||''}')">Copiar senha</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
 }
 function copyText(txt){
   if(!txt)return;

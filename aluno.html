@@ -57,6 +57,8 @@
 .follow-progress{height:10px;background:#e8efec;border-radius:999px;overflow:hidden;margin-top:8px}
 .follow-progress>div{height:100%;background:#2d7f67;width:0}
 
+
+.password-wrap{position:relative}.password-wrap input{padding-right:52px}.password-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:12px;background:transparent;cursor:pointer;font-size:19px;display:grid;place-items:center}.password-eye:hover{background:#f1f5f4}.password-eye:focus{outline:2px solid #75b8a5;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -65,7 +67,7 @@
     <div class="brand"><div class="logo">T</div><div><h2 style="margin:0">Minha Tutoria</h2><div class="sub">Espaço do estudante</div></div></div>
     <p class="sub">Entre com o RA e a senha fornecida pelo seu tutor.</p>
     <label>RA</label><input id="ra" placeholder="Digite seu RA">
-    <label>Senha</label><input id="pass" type="password" placeholder="Senha de 4 dígitos">
+    <label>Senha</label><div class="password-wrap"><input id="pass" type="password" placeholder="Senha de 4 dígitos"><button type="button" class="password-eye" onclick="togglePasswordField('pass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div>
     <button class="btn primary" onclick="studentLogin()">Entrar</button>
   </div>
 </section>
@@ -86,10 +88,7 @@
       <div class="profile-actions">
         <button class="profile-btn" onclick="openSec('acompanhamento')"><span class="bigicon">🧭</span><strong>Ficha de acompanhamento</strong><span>Dados gerais, nível básico e nível avançado organizados por bimestre.</span></button>
         <button class="profile-btn" onclick="openSec('boletim')"><span class="bigicon">📊</span><strong>Boletins</strong><span>Boletins enviados e análise de evolução ou involução das notas.</span></button>
-        <button class="profile-btn" onclick="openBim('1º Bimestre')"><span class="bigicon">1️⃣</span><strong>1º Bimestre</strong><span>Atendimentos realizados no primeiro bimestre.</span></button>
-        <button class="profile-btn" onclick="openBim('2º Bimestre')"><span class="bigicon">2️⃣</span><strong>2º Bimestre</strong><span>Atendimentos realizados no segundo bimestre.</span></button>
-        <button class="profile-btn" onclick="openBim('3º Bimestre')"><span class="bigicon">3️⃣</span><strong>3º Bimestre</strong><span>Atendimentos realizados no terceiro bimestre.</span></button>
-        <button class="profile-btn" onclick="openBim('4º Bimestre')"><span class="bigicon">4️⃣</span><strong>4º Bimestre</strong><span>Atendimentos realizados no quarto bimestre.</span></button>
+        <button class="profile-btn" onclick="openSec('atendimentos')"><span class="bigicon">📁</span><strong>Atendimentos</strong><span>Consulte os registros de atendimento organizados por bimestre.</span></button>
       </div>
     </div>
   </section>
@@ -317,8 +316,22 @@
     </div>
   </section>
 
-  <section id="bimestre" class="section">
+  <section id="atendimentos" class="section">
     <button class="btn ghost back" onclick="openSec('home')">← Voltar ao perfil</button>
+    <div class="card">
+      <h2 style="margin-bottom:6px">📁 Atendimentos</h2>
+      <p class="sub">Escolha o bimestre que deseja consultar.</p>
+      <div class="profile-actions">
+        <button class="profile-btn" onclick="openBim('1º Bimestre')"><span class="bigicon">1️⃣</span><strong>1º Bimestre</strong><span>Atendimentos realizados no primeiro bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('2º Bimestre')"><span class="bigicon">2️⃣</span><strong>2º Bimestre</strong><span>Atendimentos realizados no segundo bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('3º Bimestre')"><span class="bigicon">3️⃣</span><strong>3º Bimestre</strong><span>Atendimentos realizados no terceiro bimestre.</span></button>
+        <button class="profile-btn" onclick="openBim('4º Bimestre')"><span class="bigicon">4️⃣</span><strong>4º Bimestre</strong><span>Atendimentos realizados no quarto bimestre.</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section id="bimestre" class="section">
+    <button class="btn ghost back" onclick="openSec('atendimentos')">← Voltar aos atendimentos</button>
     <div class="card">
       <div class="bim-title"><div><h2 id="bimHeading">Atendimentos</h2><p class="sub">Registros de atendimento deste bimestre.</p></div><button id="newAttendanceBtn" class="btn primary hidden" onclick="goNewAttendance()">+ Novo atendimento</button></div>
       <div id="bimAttendanceList"></div>
@@ -503,6 +516,11 @@ function saveOnlyThisStudentFe(id,newFe){
   if(target.fe1?.basic?.club1) target.club=target.fe1.basic.club1;
   setData(latest);
   return target.fe1;
+}
+function togglePasswordField(inputId,btn){
+ const input=document.getElementById(inputId);if(!input)return;
+ const showing=input.type==='text';input.type=showing?'password':'text';
+ if(btn){btn.textContent=showing?'👁️':'🙈';btn.setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');btn.title=showing?'Mostrar senha':'Ocultar senha';}
 }
 async function studentLogin(){
  await ensureCloudReady();
