@@ -126,10 +126,10 @@
   <div class="login-card">
     <div class="brand"><div class="logo">T</div><div><h2 style="margin:0">Tutoria Escolar</h2><div class="sub">Painel do Tutor</div></div></div>
     <p class="sub">Acompanhe fichas, boletins, atendimentos e combinados por estudante e por bimestre.</p>
-    <label>Usuário</label><input id="loginUser" value="tutor">
-    <label>Senha</label><div class="password-wrap"><input id="loginPass" type="password" value="1234"><button type="button" class="password-eye" onclick="togglePasswordField('loginPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div>
+    <label>E-mail do tutor</label><input id="loginUser" type="email" autocomplete="username" placeholder="seuemail@exemplo.com">
+    <label>Senha</label><div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Sua senha do Firebase"><button type="button" class="password-eye" onclick="togglePasswordField('loginPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div>
     <button class="btn btn-primary" onclick="login()">Entrar</button>
-    <div class="hint">Versão conectada ao Firebase. Login provisório do tutor: tutor / 1234. Antes do uso definitivo, configuraremos autenticação segura.</div>
+    <div class="hint">Login protegido pelo Firebase Authentication. A senha do tutor não fica gravada neste arquivo nem no Firestore.</div>
   </div>
 </section>
 
@@ -253,9 +253,33 @@
           <div><label>Nome completo</label><input id="nsName"></div>
           <div><label>RA</label><input id="nsRa"></div>
           <div><label>Ano / série / turma</label><input id="nsClass" placeholder="Ex.: 6B"></div>
-          <div><label>Senha inicial</label><div class="password-wrap"><input id="nsPass" type="password" value="1234"><button type="button" class="password-eye" onclick="togglePasswordField('nsPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div></div>
+          <div><label>Senha inicial (mínimo 6 caracteres)</label><div class="password-wrap"><input id="nsPass" type="password" minlength="6" placeholder="Ex.: 583214"><button type="button" class="password-eye" onclick="togglePasswordField('nsPass',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></div></div>
         </div>
         <div class="right"><button class="btn btn-primary" onclick="addStudent()">Cadastrar estudante</button></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2 style="margin-top:0">📥 Cadastrar vários tutorados de uma vez</h2>
+        <p class="sub">Envie uma planilha Excel ou CSV com as colunas <b>Nome</b>, <b>RA</b>, <b>Senha</b> e <b>Turma</b>. Também é possível colar os dados separados por vírgula.</p>
+        <div class="form-grid">
+          <div style="grid-column:1/-1">
+            <label>Arquivo Excel ou CSV</label>
+            <input id="bulkStudentFile" type="file" accept=".xlsx,.xls,.csv,text/csv" onchange="showBulkFileName()">
+            <div class="sub" id="bulkFileName" style="margin-top:6px">Nenhum arquivo selecionado.</div>
+          </div>
+          <div style="grid-column:1/-1">
+            <label>Ou cole um CSV aqui</label>
+            <textarea id="bulkStudentCsv" rows="7" placeholder="Nome,RA,Senha,Turma
+Ana Silva,123456789,583214,7º A
+João Souza,987654321,741258,8º B"></textarea>
+            <div class="sub" style="margin-top:6px">Senha: mínimo de 6 caracteres. Os quatro campos — Nome, RA, Senha e Turma — são obrigatórios.</div>
+          </div>
+        </div>
+        <div class="right" style="gap:10px;flex-wrap:wrap">
+          <button class="btn" type="button" onclick="clearBulkStudentImport()">Limpar</button>
+          <button class="btn btn-primary" id="bulkImportBtn" type="button" onclick="importStudentsBulk()">Importar e registrar no Firebase</button>
+        </div>
+        <div id="bulkImportResult" style="margin-top:12px"></div>
       </div>
     </section>
 
@@ -263,9 +287,14 @@
     <section id="access" class="section">
       <div class="top">
         <div>
-          <h1>Logins e senhas dos estudantes</h1>
-          <p class="sub">Consulte rapidamente os acessos individuais. O login de cada estudante é o RA.</p>
+          <h1>Acessos dos estudantes</h1>
+          <p class="sub">O login continua sendo o RA. As senhas migradas ficam protegidas pelo Firebase Authentication e não podem ser visualizadas depois.</p>
         </div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <h3 style="margin-top:0">🔐 Migração para login seguro</h3>
+        <p class="sub">Use este botão uma única vez para criar no Firebase Authentication as contas dos estudantes que ainda usam senha antiga de 4 dígitos. O sistema criará uma nova senha de 6 dígitos, baixará uma planilha para você entregar aos estudantes e removerá a senha legível do Firestore.</p>
+        <div class="right"><button class="btn btn-primary" type="button" onclick="migrateExistingStudentsToAuth()">Migrar contas antigas para Firebase Auth</button></div>
       </div>
       <div class="card">
         <div class="toolbar">
@@ -313,6 +342,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 const DBKEY='tutoria_data_v2';
@@ -327,7 +357,20 @@ const firebaseConfig = {
   measurementId: "G-MBN79N65G3"
 };
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const firestore = firebase.firestore();
+const STUDENT_AUTH_DOMAIN='tutoria-estudantes.firebaseapp.com';
+function normalizeRa(v){return String(v||'').replace(/\D/g,'');}
+function studentEmailFromRa(ra){return `aluno.${normalizeRa(ra)}@${STUDENT_AUTH_DOMAIN}`;}
+function uniqueStudentEmail(ra){
+  const suffix=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  return `aluno.${normalizeRa(ra)}.${suffix}@${STUDENT_AUTH_DOMAIN}`;
+}
+let secondaryApp=null, secondaryAuth=null;
+function getSecondaryAuth(){
+  if(!secondaryApp){secondaryApp=firebase.initializeApp(firebaseConfig,'student-admin-'+Date.now());secondaryAuth=secondaryApp.auth();}
+  return secondaryAuth;
+}
 let cloudReadyPromise=null;
 let cloudLastById=new Map();
 let cloudUnsubscribe=null;
@@ -339,11 +382,46 @@ function rawLocalData(){
 function rememberCloud(students){
   cloudLastById=new Map((students||[]).map(s=>[String(s.id),JSON.stringify(s)]));
 }
+function mergeStudentRecords(localStudents,cloudStudents){
+  const result=[];
+  const usedLocal=new Set();
+
+  for(const cloud of (cloudStudents||[])){
+    const cloudId=String(cloud?.id||'');
+    const cloudRa=normalizeRa(cloud?.ra);
+    const localIndex=(localStudents||[]).findIndex((s,i)=>{
+      if(usedLocal.has(i))return false;
+      if(cloudId && String(s?.id||'')===cloudId)return true;
+      return cloudRa && normalizeRa(s?.ra)===cloudRa;
+    });
+
+    if(localIndex>=0){
+      usedLocal.add(localIndex);
+      const local=localStudents[localIndex]||{};
+      // Mantém dados antigos que ainda não chegaram ao Firebase
+      // e deixa os campos já existentes na nuvem prevalecerem.
+      result.push({...local,...cloud,id:cloud.id||local.id});
+    }else{
+      result.push(cloud);
+    }
+  }
+
+  (localStudents||[]).forEach((s,i)=>{
+    if(!usedLocal.has(i))result.push(s);
+  });
+
+  return result.filter(s=>s&&s.id);
+}
+
 function applyCloudSnapshot(students){
-  const d={students:[...(students||[])]};
+  const local=rawLocalData();
+  const merged=mergeStudentRecords(local.students||[],students||[]);
+  merged.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+  const d={students:merged};
   localStorage.setItem(DBKEY,JSON.stringify(d));
-  rememberCloud(d.students);
+  rememberCloud(students||[]);
   cloudOnline=true;
+  return d;
 }
 async function syncDataToCloud(d){
   if(!firestore || !d?.students)return;
@@ -362,36 +440,62 @@ async function syncDataToCloud(d){
 }
 function startCloudListener(onChange){
   if(cloudUnsubscribe)cloudUnsubscribe();
-  cloudUnsubscribe=firestore.collection('students').onSnapshot(snap=>{
+  cloudUnsubscribe=firestore.collection('students').onSnapshot(async snap=>{
     const students=[];
     snap.forEach(doc=>students.push({...doc.data(),id:doc.id}));
     students.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
-    applyCloudSnapshot(students);
+
+    const merged=applyCloudSnapshot(students);
+
+    // Se este navegador ainda tinha tutorados antigos que não estavam na nuvem,
+    // envia apenas os registros que faltavam, sem apagar ninguém da cópia local.
+    const cloudIds=new Set(students.map(s=>String(s.id||'')));
+    const missing=(merged.students||[]).filter(s=>s?.id&&!cloudIds.has(String(s.id)));
+    if(missing.length){
+      try{
+        const batch=firestore.batch();
+        missing.forEach(s=>batch.set(firestore.collection('students').doc(String(s.id)),s,{merge:true}));
+        await batch.commit();
+      }catch(e){
+        console.warn('Tutorados antigos preservados localmente; ainda não foi possível enviá-los ao Firebase.',e);
+      }
+    }
+
     try{onChange&&onChange()}catch(e){console.error(e)}
   },e=>{console.error('Falha na atualização em tempo real:',e);cloudOnline=false});
 }
 async function initCloudData(onChange){
   try{
+    const local=rawLocalData();
     const snap=await firestore.collection('students').get();
-    if(snap.empty){
-      const local=rawLocalData();
-      if(local.students?.length){
-        const batch=firestore.batch();
-        for(const s of local.students){if(s?.id)batch.set(firestore.collection('students').doc(String(s.id)),s)}
-        await batch.commit();
-        rememberCloud(local.students);
+    const cloudStudents=[];
+    snap.forEach(doc=>cloudStudents.push({...doc.data(),id:doc.id}));
+
+    // Nunca substitui a lista local pela lista da nuvem.
+    // Une as duas fontes para evitar o desaparecimento de tutorados antigos.
+    const merged=mergeStudentRecords(local.students||[],cloudStudents);
+    merged.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
+    localStorage.setItem(DBKEY,JSON.stringify({students:merged}));
+    rememberCloud(cloudStudents);
+
+    // Envia ao Firebase os tutorados que existiam apenas neste navegador.
+    const cloudIds=new Set(cloudStudents.map(s=>String(s.id||'')));
+    const missing=merged.filter(s=>s?.id&&!cloudIds.has(String(s.id)));
+    if(missing.length){
+      const batch=firestore.batch();
+      for(const s of missing){
+        batch.set(firestore.collection('students').doc(String(s.id)),s,{merge:true});
       }
-    }else{
-      const students=[];snap.forEach(doc=>students.push({...doc.data(),id:doc.id}));
-      students.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'));
-      applyCloudSnapshot(students);
+      await batch.commit();
     }
+
     cloudOnline=true;
     startCloudListener(onChange);
     return true;
   }catch(e){
-    console.error('Firebase indisponível; usando cópia local:',e);
+    console.error('Firebase indisponível; preservando a cópia local:',e);
     cloudOnline=false;
+    // Em caso de erro de regra/rede, não apaga nem substitui os tutorados locais.
     return false;
   }
 }
@@ -400,7 +504,7 @@ async function ensureCloudReady(){
   return cloudReadyPromise;
 }
 
-const INITIAL_DATA={"students": [{"id": "s1", "name": "ANA FLÁVIA SILVA PAVONI", "internalName": "ANA FLÁVIA SILVA PAVONI", "ra": "115791553", "turma": "6B", "pass": "8421", "club": "Fanfarra", "elective": "Mirela e Claudia", "source": "documentos/01_ANA_FL_VIA_6B.pdf", "sourceName": "ANA FLÁVIA 6B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 14/04 seus sonhos? Tem vontade de um dia participar de um campeonato de vôlei.", "project": "Quer ser advogada e delegada.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:40 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre sonhos, projeto de vida e perspectivas para o futuro, EXCELENTE! incentivando a estudante a refletir sobre seus objetivos pessoais e acadêmicos. Também 07:19 Atendimento com o responsável? dialogamos sobre a Prova Paulista, destacando a importância do comprometimento com os ATENÇÃO! ( ) Sim ( )Não estudos e da participação nas avaliações. BUSCA ATIVA! O que devo fazer? Além disso, foram abordados alguns aspectos pessoais da estudante, promovendo um momento de escuta, acolhimento e fortalecimento do vínculo, contribuindo para seu desenvolvimento pessoal e escolar.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s2", "name": "ARTHUR GUGLIEMONI", "internalName": "ARTHUR GUGLIELMONI ALVES", "ra": "1161127033", "turma": "8B", "pass": "3245", "club": "Pebolim", "elective": "Fundamentos de", "source": "documentos/02_Arthur_Gugliemoni_7B.pdf", "sourceName": "Arthur Gugliemoni 7B.pdf", "warnings": ["Nome do arquivo: Arthur Gugliemoni; nome dentro da ficha: ARTHUR GUGLIELMONI ALVES. Conferir cadastro.", "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "19/02/2014", "city": "", "phone": "", "family": "", "about": "", "dream": "um jogo", "project": "raros em jogos", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s3", "name": "CAIO DE FRANÇA LUQUE", "internalName": "CAIO DE FRANÇA LUQUE", "ra": "1136973746", "turma": "8B", "pass": "9648", "club": "Jogos de mesa", "elective": "Doenças (Ana Paula e", "source": "documentos/03_Caio_8B.pdf", "sourceName": "Caio  8B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "09/09/2012", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 01/04/2026 seus sonhos? Ser programador Sênior", "project": "01/04/2026 Ser programador Sênior. Sempre se interessou por programação.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-25", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre os gostos, interesses e preferências do estudante, minhas faltas? 01/04/2026 promovendo um momento de diál", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s4", "name": "GUSTAVO HENRIQUE", "internalName": "GUSTAVO HENRIQUE DOS SANTOS VIEIRA", "ra": "0001151253145", "turma": "8B", "pass": "5212", "club": "Fanfarra", "elective": "Fundamentos", "source": "documentos/04_Gustavo_Henrique_8A.pdf", "sourceName": "Gustavo Henrique 8A.pdf", "warnings": ["Turma no arquivo: 8A; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Ter uma casa, dar uma casa para a mãe e ter motos.", "project": "Ser lutador de UFC. Treina kikBox.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-29", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância 07:45 Atendimento com o responsável? da continuidade dos estudos após a educação básica, com destaque para a UNESP como ATENÇÃO! ( ) Sim ( )Não possibilidade de formação acadêmica. BUSCA ATIVA! O que devo fazer? Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s5", "name": "HEITOR LUCAS DE OLIVEIRA SILVA FILHO", "internalName": "HEITOR LUCAS DE OLIVEIRA SILVA FILHO", "ra": "116296246", "turma": "8B", "pass": "9586", "club": "Beach Tennis", "elective": "Agro em Ação", "source": "documentos/05_Heitor_7B.pdf", "sourceName": "Heitor 7B.pdf", "warnings": ["Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser feliz seus sonhos?", "project": "Ser advogado", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a minhas faltas? importância da escola na construção e realização desses objetivos. Os estudantes foram EXCELENTE! 07:20 incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para Atendimento com o responsável? alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s6", "name": "ISABELA AZEVEDO DA SILVA", "internalName": "ISABELA AZEVEDO DA SILVA", "ra": "1143747859", "turma": "7A", "pass": "5477", "club": "Vôlei", "elective": "Fundamentos em", "source": "documentos/06_Isabela_7A.pdf", "sourceName": "Isabela 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser advogada seus sonhos?", "project": "Tornar-se advogada pois quer trabalhar com a lei", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s7", "name": "JEAN LUCCA GOUVÊA DE OLIVEIRA", "internalName": "JEAN LUCCA GOUVÊA DE OLIVEIRA", "ra": "1160067909", "turma": "7B", "pass": "5619", "club": "", "elective": "", "source": "documentos/07_Jean_7B.pdf", "sourceName": "Jean 7B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "06/06/2014", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser empresário ou seus sonhos? dublador", "project": "", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a minhas faltas? importância da escola na construção e realização desses objetivos. Os estudantes foram EXCELENTE! 07:20 incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para Atendimento com o responsável? alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s8", "name": "LIVIA SOFIA DE ARAUJO COSTA", "internalName": "LIVIA SOFIA DE ARAUJO COSTA", "ra": "1201565431", "turma": "7A", "pass": "8213", "club": "Cinema", "elective": "", "source": "documentos/08_L_via_7A.pdf", "sourceName": "Lívia 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "09/09/2012", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 22/04 seus sonhos? Diz ter muitos sonhos, sendo um deles ser professora.", "project": "Ser professora de geografia e tecnologia, pois gosta desses componentes.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-17", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na minhas faltas? construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus EXCELENTE! 07:15 interesses, metas para o futuro e os caminhos necessários para alcançá-las. Atendimento com o ATENÇÃO! responsável? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e BUSCA ATIVA! ( ) Sim ( )Não profissional, destacando a importância do compromisso com os estudos, da dedicação e da O que devo fazer? construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "A estudante apresentou bastante dificuldade em Matemática, inclusive em operações básicas, BUSCA ATIVA! ( ) Sim ( )Não como adição. Como estratégia de apoio, foi orientada na realização de atividades na plataforma O que devo fazer? Matific, recebendo acompanhamento e auxílio durante a execução das propostas. Também foi oferecido como recurso pedagógico o material dourado, buscando favorecer a compreensão dos conceitos matemáticos de forma concreta e visual, contribuindo para o desenvolvimento da aprendizagem e da autonomia da estudante.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s9", "name": "LAURYN HILARY DE OLIVEIRA TEODORO", "internalName": "LAURYN HILARY DE OLIVEIRA TEODORO", "ra": "1200797176", "turma": "6B", "pass": "4947", "club": "Beach Tênis", "elective": "", "source": "documentos/09_LAURYN_6B.pdf", "sourceName": "LAURYN 6B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "", "project": "Estudar, fazer faculdade.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:20 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre as expectativas em relação à Prova Paulista e a importância EXCELENTE! da dedicação aos estudos para alcançar bons resultados. Também dialogamos sobre projeto de 07:20 Atendimento com o responsável? vida e perspectivas para o futuro. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! A estudante demonstrou-se muito animada e participativa durante a conversa. Relatou gostar das O que devo fazer? disciplinas de Matemática e Ciências e compartilhou o sonho de se tornar professora de Matemática, demonstrando interesse pelos estudos e motivação em relação aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s10", "name": "LORENA PEIXOTO MOLINA", "internalName": "LORENA PEIXOTO MOLINA", "ra": "1147866570", "turma": "7B", "pass": "6691", "club": "Teatro e dança", "elective": "", "source": "documentos/10_Lorena_7B.pdf", "sourceName": "Lorena 7B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-10", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:20 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância EXCELENTE! da continuidade dos estudos após a educação básica, com destaque para a UNESP como 07:30 Atendimento com o responsável? possibilidade de formação acadêmica. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O que devo fazer? O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s11", "name": "LUIZA DE OLIVEIRA ALVES", "internalName": "LUIZA DE OLIVEIRA ALVES", "ra": "115791484", "turma": "7A", "pass": "3095", "club": "Volei", "elective": "Fundamentos de", "source": "documentos/11_Lu_za_7A.pdf", "sourceName": "Luíza 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 28/04 seus sonhos? Fazer viagens internacionais.", "project": "Ser biologa", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamo", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-28", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre projeto de vida, perspectivas para o futuro e a importância EXCELENTE! da continuidade dos estudos após a educação básica, com destaque para a UNESP como 07:20 Atendimento com o responsável? possibilidade de formação acadêmica. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Também dialogamos sobre a Prova Paulista e as expectativas do estudante em relação à avaliação. O que devo fazer? O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s12", "name": "MARIAH MARCELINO LUIZ", "internalName": "ANA FLÁVIA SILVA PAVONI", "ra": "0001208161209", "turma": "8A", "pass": "1649", "club": "Desenho", "elective": "", "source": "documentos/12_MARIAH_MARCELINO_LUIZ_8A.pdf", "sourceName": "MARIAH MARCELINO LUIZ 8A.pdf", "warnings": ["Nome do arquivo: MARIAH MARCELINO LUIZ; nome dentro da ficha: ANA FLÁVIA SILVA PAVONI. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 09/06 seus sonhos? Ver um show de k-pop", "project": "Ser advogada ou psicóloga.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-11", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa com 3 alunos sobre projeto de vida, sonhos e a EXCELENTE! importância da escola na construção e realização desses objetivos. Os estudantes foram 07:40 Atendimento com o responsável? incentivados a refletir sobre seus interesses, metas para o futuro e os caminhos necessários para ATENÇÃO! ( ) Sim ( )Não alcançá-las. BUSCA ATIVA! O que devo fazer? Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os alunos participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-14", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Durante a tutoria, conversamos sobre sonhos, projeto de vida e perspectivas para o futuro, EXCELENTE! incentivando a estudante a refletir sobre seus objetivos pessoais e acadêmicos. Também 07:19 Atendimento com o responsável? dialogamos sobre a Prova Paulista, destacando a importância do comprometimento com os ATENÇÃO! ( ) Sim ( )Não estudos e da participação nas avaliações. BUSCA ATIVA!", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s13", "name": "MARCOS VINÍCIUS", "internalName": "MARCOS GABRIEL SILVA FALCÃO", "ra": "1201292013", "turma": "8B", "pass": "2663", "club": "não se lembra", "elective": "DuCarmo", "source": "documentos/13_Marcos_Vin_cius_7B.pdf", "sourceName": "Marcos Vinícius 7B.pdf", "warnings": ["Nome do arquivo: Marcos Vinícius; nome dentro da ficha: MARCOS GABRIEL SILVA FALCÃO. Conferir cadastro.", "Turma no arquivo: 7B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "16/12/2013", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Ser agricultor seus sonhos?", "project": "Ser agricultor.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na EXCELENTE! construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus 07:40 Atendimento com o responsável? interesses, metas para o futuro e os caminhos necessários para alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-29", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação O que devo fazer? ao seu desempenho escolar e aos seus objetivos futuros.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s14", "name": "MAYA FERNANDA ALVES RIBEIRO", "internalName": "MAYA FERNANDA ALVES RIBEIRO", "ra": "1161119498", "turma": "7A", "pass": "4025", "club": "", "elective": "", "source": "documentos/14_Maya_7A.pdf", "sourceName": "Maya 7A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos 28/04 ir para a seus sonhos? Irlanda pois tem neve.", "project": "Paleontologia ou Herbetologia", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": [{"id": "a1", "bim": "1º Bimestre", "date": "2026-03-12", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "Hoje realizamos uma roda de conversa sobre projeto de vida, sonhos e a importância da escola na EXCELENTE! construção e realização desses objetivos. Os estudantes foram incentivados a refletir sobre seus 07:16 Atendimento com o responsável? interesses, metas para o futuro e os caminhos necessários para alcançá-las. ATENÇÃO! ( ) Sim ( )Não BUSCA ATIVA! Durante a atividade, discutimos como a escola contribui para o desenvolvimento pessoal, social e O que devo fazer? profissional, destacando a importância do compromisso com os estudos, da dedicação e da construção de conhecimentos para a realização dos sonhos. Os estudantes participaram compartilhando ideias, experiências e expectativas para o futuro, promovendo um momento de reflexão, escuta e valorização de seus projetos de vida.", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}, {"id": "a2", "bim": "1º Bimestre", "date": "2026-04-22", "time": "", "nature": "Pessoal / Projeto de Vida", "summary": "O aluno demonstrou-se muito comprometido, participativo e com boas perspectivas em relação BUSCA ATIVA! ao seu desempenho escolar e aos seus objetivos futuros. O que devo fazer?", "responsible": "Não informado", "freq": "Excelente", "action": "", "deal": "", "deadline": ""}]}, {"id": "s15", "name": "MIGUEL NEVES PEREIRA BARBOZA", "internalName": "MIGUEL NEVES PEREIRA BARBOZA", "ra": "1151397787", "turma": "8B", "pass": "2957", "club": "", "elective": "Futebol (Patrese)", "source": "documentos/15_Miguel_Neves_8B.pdf", "sourceName": "Miguel Neves 8B.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "futebol", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s16", "name": "Nattan José Garcia da Silva", "internalName": "Nattan José Garcia da Silva", "ra": "", "turma": "9A", "pass": "—", "club": "Ping Pong", "elective": "Patrese", "source": "documentos/16_Nattan_Jos_9A.pdf", "sourceName": "Nattan José 9A.pdf", "warnings": ["RA não consta na ficha. O login do estudante ficará pendente até o RA ser informado."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Viajar pelo mundo", "project": "ganha bem.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s17", "name": "OSVALDO SOARES", "internalName": "Oswaldo Soares Silva Júnior", "ra": "1141736640", "turma": "8B", "pass": "1602", "club": "Sustentabilidade", "elective": "Robótica", "source": "documentos/17_Osvaldo_Soares_9B.pdf", "sourceName": "Osvaldo Soares 9B.pdf", "warnings": ["Nome do arquivo: Osvaldo Soares; nome dentro da ficha: Oswaldo Soares Silva Júnior. Conferir cadastro.", "Turma no arquivo: 9B; turma dentro da ficha: 8B. Conferir cadastro."], "fe1": {"completed": true, "dob": "19/12/2011", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos?", "project": "estudante gosta e já lida com isso pois a família atua no ramo.", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s18", "name": "OTÁVIO AUGUSTO DE PAULA SILVA", "internalName": "OTÁVIO AUGUSTO DE PAULA SILVA", "ra": "0001141140135", "turma": "8A", "pass": "1768", "club": "Jogos de mesa", "elective": "Eu e os robôs", "source": "documentos/18_Ot_vio_Augusto_8A.pdf", "sourceName": "Otávio Augusto 8A.pdf", "warnings": [], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos Viajar pelo mundo, seus sonhos? constituir família e ser feliz", "project": "Programador", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}, {"id": "s19", "name": "RAFAEL YURI", "internalName": "RAPHAEL YURI DOS SANTOS DE SOUZA", "ra": "0001153572898", "turma": "8A", "pass": "3490", "club": "Esporte", "elective": "Ana Paula e Hermano", "source": "documentos/19_Rafael_Yuri_8A.pdf", "sourceName": "Rafael Yuri 8A.pdf", "warnings": ["Nome do arquivo: Rafael Yuri; nome dentro da ficha: RAPHAEL YURI DOS SANTOS DE SOUZA. Conferir cadastro."], "fe1": {"completed": true, "dob": "", "city": "", "phone": "", "family": "", "about": "", "dream": "levam você para a realização dos seus sonhos? Viajar 07/04/2026", "project": "Agronegócios pois mora no sítio desde que nasceu", "likes": "", "virtues": "", "skills": "", "improve": ""}, "boletins": [], "attendances": []}]};
+const INITIAL_DATA={"students":[]};
 
 let currentStudent=null;let currentProfBim='1º Bimestre';let attendanceBimLocked='1º Bimestre';
 function canonicalBim(v){const n=parseInt(String(v||'').match(/[1-4]/)?.[0]||'1',10);return `${n}º Bimestre`;}
@@ -484,8 +588,13 @@ window.addEventListener('storage',e=>{if(e.key===DBKEY){try{
   }
 }catch(err){console.error('Falha ao atualizar dados recebidos do estudante:',err)}}});
 async function login(){
-  await ensureCloudReady();
-  if(loginUser.value==='tutor' && loginPass.value==='1234'){
+  const email=loginUser.value.trim();
+  const pwd=loginPass.value;
+  if(!email||!pwd)return alert('Digite seu e-mail e sua senha.');
+  try{
+    await auth.signInWithEmailAndPassword(email,pwd);
+    cloudReadyPromise=initCloudData(()=>{if(!app.classList.contains('hidden'))renderAll();});
+    await ensureCloudReady();
     loginScreen.classList.add('hidden');app.classList.remove('hidden');renderAll();
     const sid=sessionStorage.getItem('tutoria_student_to_open');
     if(sid){
@@ -494,9 +603,9 @@ async function login(){
       renderStudents(); currentStudent=sid;
       setTimeout(()=>newAttendance(),100);
     }
-  } else alert('Usuário ou senha inválidos.');
+  }catch(e){console.error(e);alert('Não foi possível entrar. Confira o e-mail, a senha e se o acesso por E-mail/Senha está ativado no Firebase Authentication.');}
 }
-function logout(){app.classList.add('hidden');loginScreen.classList.remove('hidden')}
+async function logout(){try{await auth.signOut()}catch(e){} app.classList.add('hidden');loginScreen.classList.remove('hidden');loginPass.value='';}
 function showSection(id,btn){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -541,7 +650,7 @@ function renderAll(){
   stBol.textContent=students.reduce((n,s)=>n+(s.boletins?.length||0),0);
   stAt.textContent=students.reduce((n,s)=>n+allAttendances(s).length,0);
   const rows=students.map(s=>`<tr><td><b>${s.name}</b><div class="sub">${s.ra}</div></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td><span class="credential">${s.pass||'—'}</span></td><td>${feBimStatus(s).html}</td><td>${s.boletins?.length||0}</td><td>${latestDate(s)}</td><td><button class="mini" onclick="openStudent('${s.id}')">Abrir</button></td></tr>`).join('');
-  quickTable.innerHTML=students.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Senha</th><th>FE1</th><th>Boletins</th><th>Última tutoria</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="empty">Nenhum tutorado cadastrado.</div>';
+  quickTable.innerHTML=students.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Acesso</th><th>FE1</th><th>Boletins</th><th>Última tutoria</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="empty">Nenhum tutorado cadastrado.</div>';
   fillClasses();
   if(window.accessTable) renderAccess();
 }
@@ -553,38 +662,11 @@ function fillClasses(){
 }
 
 function downloadAccessExcel(){
-  try{
-    if(typeof XLSX==='undefined'){
-      alert('Não foi possível carregar o gerador de Excel. Verifique sua conexão e tente novamente.');
-      return;
-    }
-    const d=getData();
-    const rows=(d.students||[])
-      .slice()
-      .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'pt-BR'))
-      .map(s=>({
-        'Nome do aluno': String(s.name||''),
-        'Login (RA)': String(s.ra||''),
-        'Senha': String(s.pass||'')
-      }));
-    if(!rows.length){ alert('Nenhum estudante cadastrado.'); return; }
-    const ws=XLSX.utils.json_to_sheet(rows,{header:['Nome do aluno','Login (RA)','Senha']});
-    ws['!cols']=[{wch:38},{wch:18},{wch:12}];
-    // Força login e senha como texto para preservar zeros à esquerda.
-    const range=XLSX.utils.decode_range(ws['!ref']);
-    for(let r=1;r<=range.e.r;r++){
-      for(const c of [1,2]){
-        const addr=XLSX.utils.encode_cell({r,c});
-        if(ws[addr]){ ws[addr].t='s'; ws[addr].v=String(ws[addr].v??''); }
-      }
-    }
-    const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Acessos');
-    XLSX.writeFile(wb,'acessos_tutoria.xlsx');
-  }catch(err){
-    console.error(err);
-    alert('Não foi possível gerar a planilha Excel.');
-  }
+  if(typeof XLSX==='undefined')return alert('Não foi possível carregar o gerador de Excel. Verifique sua conexão com a internet e tente novamente.');
+  const rows=[...getData().students].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')).map(s=>({
+    'Nome do aluno':s.name,'Login (RA)':String(s.ra||''),'Status da senha':s.authUid?'Protegida pelo Firebase Authentication':(s.pass?'Senha antiga — migrar':'Acesso pendente')
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Acessos'); XLSX.writeFile(wb,'acessos_tutoria.xlsx');
 }
 
 function togglePasswordField(inputId,btn){
@@ -613,7 +695,7 @@ function renderAccess(){
     const hay=[s.name,s.ra,s.turma].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!f||s.turma===f);
   });
-  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Senha</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td><span class="student-pass"><span id="pass-${s.id}" class="credential" data-pass="${s.pass||''}">••••</span><button type="button" class="eye-mini" onclick="toggleStudentPassword('${s.id}',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></span></td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="copyText('${s.pass||''}')">Copiar senha</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Autenticação</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td>${s.authUid?'<span class="status ok">🔒 Protegida pelo Firebase</span>':(s.pass?'<span class="status warn">Senha antiga — migrar</span>':'<span class="status warn">Acesso pendente</span>')}</td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
 }
 function copyText(txt){
   if(!txt)return;
@@ -623,7 +705,40 @@ function copyText(txt){
 function renderStudents(){
   const q=(search.value||'').toLowerCase(), f=classFilter.value;
   const ss=getData().students.filter(s=>(!q||s.name.toLowerCase().includes(q)||s.ra.toLowerCase().includes(q))&&(!f||s.turma===f));
-  studentsTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>RA / Login</th><th>Senha</th><th>FE1</th><th>Atend.</th><th>Arquivo</th><th></th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b>${s.warnings?.length?'<div class="status warn" title="'+s.warnings.join(' ')+'">⚠ Conferir ficha</div>':''}</td><td>${s.turma}</td><td><b>${s.ra||'PENDENTE'}</b></td><td><span class="student-pass"><span id="list-pass-${s.id}" class="credential" data-pass="${s.pass||''}">••••</span><button type="button" class="eye-mini" onclick="toggleStudentPasswordEl('list-pass-${s.id}',this)" aria-label="Mostrar senha" title="Mostrar senha">👁️</button></span></td><td>${feBimStatus(s).html}</td><td>${allAttendances(s).length}</td><td><a class="mini" href="${s.source}" target="_blank">Abrir PDF</a></td><td><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+  studentsTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>RA / Login</th><th>Acesso</th><th>FE1</th><th>Atend.</th><th>Arquivo</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b>${s.warnings?.length?'<div class="status warn" title="'+s.warnings.join(' ')+'">⚠ Conferir ficha</div>':''}</td><td>${s.turma}</td><td><b>${s.ra||'PENDENTE'}</b></td><td>${s.authUid?'<span class="status ok">🔒 Firebase</span>':(s.pass?'<span class="status warn">Migrar</span>':'<span class="status warn">Pendente</span>')}</td><td>${feBimStatus(s).html}</td><td>${allAttendances(s).length}</td><td>${s.source?`<a class="mini" href="${s.source}" target="_blank">Abrir PDF</a>`:'—'}</td><td><div class="access-actions"><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button><button class="mini" style="color:var(--danger);border-color:#f0bcbc;background:#fff7f7" onclick="deleteStudent('${s.id}')">Excluir tutorado</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+}
+
+async function deleteStudent(id){
+  const d=getData();
+  const s=d.students.find(x=>String(x.id)===String(id));
+  if(!s)return alert('Tutorado não encontrado.');
+
+  const msg=`Excluir ${s.name} da sua lista de tutorados?
+
+Serão apagados do Firestore a ficha, os atendimentos e os dados de boletim vinculados a este cadastro. Esta ação não pode ser desfeita.`;
+  if(!confirm(msg))return;
+
+  try{
+    await firestore.collection('students').doc(String(s.id)).delete();
+    if(s.ra){
+      try{await firestore.collection('loginAliases').doc(normalizeRa(s.ra)).delete();}catch(aliasErr){console.warn('Não foi possível remover o alias do RA:',aliasErr);}
+    }
+    const updated=getData();
+    updated.students=(updated.students||[]).filter(x=>String(x.id)!==String(s.id));
+    localStorage.setItem(DBKEY,JSON.stringify(updated));
+    cloudLastById.delete(String(s.id));
+    if(String(currentStudent)===String(s.id))currentStudent=null;
+    renderAll();
+    renderStudents();
+    renderAccess();
+
+    alert(`${s.name} foi excluído(a) da Tutoria.
+
+O RA ${s.ra||''} ficou liberado para um novo cadastro. A conta antiga do Firebase pode permanecer arquivada, mas não impede cadastrar novamente o mesmo RA.`);
+  }catch(e){
+    console.error('Erro ao excluir tutorado:',e);
+    alert('Não foi possível excluir o tutorado do Firebase: '+(e.message||e));
+  }
 }
 function openStudent(id){
   const s=getData().students.find(x=>x.id===id);
@@ -741,14 +856,187 @@ function showProfBim(bim,btn){
 
 function initials(n){return n.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase()}
 function fmt(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—'}
-function addStudent(){
-  const name=nsName.value.trim(),ra=nsRa.value.trim(),turma=nsClass.value.trim(),pass=nsPass.value.trim();
+async function addStudent(){
+  const name=nsName.value.trim(),ra=normalizeRa(nsRa.value),turma=nsClass.value.trim(),pass=nsPass.value.trim();
   if(!name||!ra||!turma||!pass)return alert('Preencha nome, RA, turma e senha.');
-  const d=getData(); if(d.students.some(s=>s.ra===ra))return alert('Já existe um estudante com esse RA.');
-  d.students.push({id:'s'+Date.now(),name,ra,turma,pass,club:'',elective:'',fe1:{completed:false},boletins:[],atendimentosPorBimestre:{'1º Bimestre':[],'2º Bimestre':[],'3º Bimestre':[],'4º Bimestre':[]}}); setData(d);
-  ['nsName','nsRa','nsClass'].forEach(id=>document.getElementById(id).value=''); nsPass.value='1234';
-  alert('Estudante cadastrado. Ele já pode acessar aluno.html usando RA e senha.');
-  renderAll(); showSection('students',document.querySelectorAll('nav button')[1]); renderStudents();
+  if(pass.length<6)return alert('A senha precisa ter pelo menos 6 caracteres para o Firebase Authentication.');
+  const d=getData(); if(d.students.some(s=>normalizeRa(s.ra)===ra))return alert('Já existe um estudante com esse RA.');
+  try{
+    const studentId='s'+Date.now();
+    const authEmail=uniqueStudentEmail(ra);
+    const cred=await getSecondaryAuth().createUserWithEmailAndPassword(authEmail,pass);
+    await getSecondaryAuth().signOut();
+    const student={id:studentId,name,ra,turma,authUid:cred.user.uid,authEmail,club:'',elective:'',fe1:{completed:false},boletins:[],atendimentosPorBimestre:{'1º Bimestre':[],'2º Bimestre':[],'3º Bimestre':[],'4º Bimestre':[]}};
+    d.students.push(student);
+    setData(d);
+    // Grava o perfil completo antes de liberar o login do aluno.
+    await firestore.collection('students').doc(studentId).set(student,{merge:true});
+    await firestore.collection('loginAliases').doc(ra).set({studentId,authEmail});
+    ['nsName','nsRa','nsClass','nsPass'].forEach(id=>document.getElementById(id).value='');
+    alert(`Estudante cadastrado com login seguro.
+
+RA: ${ra}
+Senha inicial: ${pass}
+
+Se este RA já foi usado antes, o novo cadastro funciona normalmente. Guarde/entregue esta senha ao estudante: depois ela não poderá ser visualizada no sistema.`);
+    renderAll(); showSection('students',document.querySelectorAll('nav button')[1]); renderStudents();
+  }catch(e){console.error(e); alert('Não foi possível criar a conta no Firebase Authentication: '+(e.message||e));}
+}
+
+
+function showBulkFileName(){
+  const f=document.getElementById('bulkStudentFile')?.files?.[0];
+  const el=document.getElementById('bulkFileName');
+  if(el)el.textContent=f?`Arquivo selecionado: ${f.name}`:'Nenhum arquivo selecionado.';
+}
+function clearBulkStudentImport(){
+  const f=document.getElementById('bulkStudentFile'), t=document.getElementById('bulkStudentCsv'), r=document.getElementById('bulkImportResult');
+  if(f)f.value=''; if(t)t.value=''; if(r)r.innerHTML=''; showBulkFileName();
+}
+function normalizeHeader(v){
+  return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+}
+function pickImportField(row,names){
+  const wanted=new Set(names.map(normalizeHeader));
+  for(const [k,v] of Object.entries(row||{})) if(wanted.has(normalizeHeader(k))) return v;
+  return '';
+}
+function normalizeImportRows(rows){
+  const out=[];
+  for(const row of rows||[]){
+    const name=String(pickImportField(row,['Nome','Nome completo','Estudante','Aluno'])||'').trim();
+    const ra=normalizeRa(pickImportField(row,['RA','Login','Login RA','Registro do aluno']));
+    let pass=String(pickImportField(row,['Senha','Senha inicial','Password'])||'').trim();
+    const turma=String(pickImportField(row,['Turma','Classe','Ano série turma','Ano/serie/turma'])||'').trim();
+    // Excel às vezes transforma senhas numéricas em número.
+    if(pass.endsWith('.0') && /^\d+\.0$/.test(pass)) pass=pass.slice(0,-2);
+    if(name||ra||pass) out.push({name,ra,pass,turma});
+  }
+  return out;
+}
+function parseCsvText(text){
+  const wb=XLSX.read(String(text||''),{type:'string',raw:false});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+}
+async function readBulkStudentRows(){
+  const file=document.getElementById('bulkStudentFile')?.files?.[0];
+  const pasted=document.getElementById('bulkStudentCsv')?.value?.trim();
+  if(!file && !pasted) throw new Error('Selecione uma planilha/CSV ou cole os dados no campo de CSV.');
+  if(pasted && !file) return normalizeImportRows(parseCsvText(pasted));
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array',raw:false});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return normalizeImportRows(XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}));
+}
+async function importStudentsBulk(){
+  if(!auth.currentUser)return alert('Entre primeiro com a conta do tutor.');
+  const btn=document.getElementById('bulkImportBtn'), result=document.getElementById('bulkImportResult');
+  let rows;
+  try{rows=await readBulkStudentRows();}catch(e){return alert(e.message||e);}
+  if(!rows.length)return alert('Não encontrei estudantes na planilha. Verifique se há cabeçalhos Nome, RA, Senha e Turma.');
+
+  const seen=new Set(), valid=[], invalid=[];
+  for(const [i,row] of rows.entries()){
+    if(!row.name || !row.ra || !row.pass || !row.turma){invalid.push(`Linha ${i+2}: faltou Nome, RA, Senha ou Turma.`);continue;}
+    if(row.pass.length<6){invalid.push(`${row.name}: senha com menos de 6 caracteres.`);continue;}
+    if(seen.has(row.ra)){invalid.push(`${row.name}: RA ${row.ra} repetido na própria planilha.`);continue;}
+    seen.add(row.ra); valid.push(row);
+  }
+  if(!valid.length){
+    result.innerHTML=`<div class="notice">Nenhum registro válido para importar.<br>${invalid.map(x=>'• '+x).join('<br>')}</div>`;
+    return;
+  }
+  if(!confirm(`Foram encontrados ${valid.length} tutorado(s) válido(s).\n\nQuem já estiver cadastrado será aproveitado, sem apagar ficha, atendimentos ou boletins. Novos tutorados serão criados no Firebase Authentication. Continuar?`))return;
+
+  btn.disabled=true; btn.textContent='Importando...';
+  result.innerHTML='<div class="notice">Importação em andamento. Não feche esta página.</div>';
+  const d=getData(), sec=getSecondaryAuth();
+  let created=0, reused=0, authCreated=0, updated=0;
+  const errors=[];
+
+  try{
+    for(const row of valid){
+      try{
+        let st=d.students.find(s=>normalizeRa(s.ra)===row.ra);
+        if(st){
+          reused++;
+          if(row.name && st.name!==row.name){st.name=row.name;updated++;}
+          if(row.turma)st.turma=row.turma;
+          if(!st.authUid){
+            const authEmail=uniqueStudentEmail(row.ra);
+            const cred=await sec.createUserWithEmailAndPassword(authEmail,row.pass);
+            await sec.signOut();
+            st.authUid=cred.user.uid; st.authEmail=authEmail; delete st.pass;
+            await firestore.collection('students').doc(String(st.id)).set(st,{merge:true});
+            await firestore.collection('loginAliases').doc(row.ra).set({studentId:st.id,authEmail});
+            authCreated++;
+          }else{
+            // Conta já autenticada: preserva a conta e a senha atual do Firebase.
+            const authEmail=st.authEmail;
+            await firestore.collection('students').doc(String(st.id)).set(st,{merge:true});
+            if(authEmail)await firestore.collection('loginAliases').doc(row.ra).set({studentId:st.id,authEmail},{merge:true});
+          }
+        }else{
+          const studentId='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+          const authEmail=uniqueStudentEmail(row.ra);
+          const cred=await sec.createUserWithEmailAndPassword(authEmail,row.pass);
+          await sec.signOut();
+          st={id:studentId,name:row.name,ra:row.ra,turma:row.turma,authUid:cred.user.uid,authEmail,club:'',elective:'',fe1:{completed:false},boletins:[],atendimentosPorBimestre:{'1º Bimestre':[],'2º Bimestre':[],'3º Bimestre':[],'4º Bimestre':[]}};
+          d.students.push(st);
+          await firestore.collection('students').doc(studentId).set(st,{merge:true});
+          await firestore.collection('loginAliases').doc(row.ra).set({studentId,authEmail});
+          created++; authCreated++;
+        }
+      }catch(e){
+        try{await sec.signOut()}catch(_){}
+        errors.push(`${row.name} (RA ${row.ra}): ${e.code||e.message||e}`);
+      }
+    }
+    setData(d);
+    // Garante a gravação concluída antes de atualizar a tela.
+    await syncDataToCloud(d);
+    renderAll(); renderStudents(); renderAccess();
+    const ok=created+reused;
+    result.innerHTML=`<div class="notice"><b>Importação concluída.</b><br>Processados: ${ok}<br>Novos tutorados: ${created}<br>Cadastros já existentes aproveitados: ${reused}<br>Contas Firebase Auth criadas agora: ${authCreated}${updated?`<br>Nomes atualizados: ${updated}`:''}${invalid.length?`<br><br><b>Linhas ignoradas:</b><br>${invalid.map(x=>'• '+x).join('<br>')}`:''}${errors.length?`<br><br><b>Erros:</b><br>${errors.map(x=>'• '+x).join('<br>')}`:''}</div>`;
+    if(!errors.length)clearBulkStudentImportKeepResult();
+  }finally{
+    btn.disabled=false; btn.textContent='Importar e registrar no Firebase';
+  }
+}
+function clearBulkStudentImportKeepResult(){
+  const f=document.getElementById('bulkStudentFile'), t=document.getElementById('bulkStudentCsv');
+  if(f)f.value=''; if(t)t.value=''; showBulkFileName();
+}
+
+async function migrateExistingStudentsToAuth(){
+  if(!auth.currentUser)return alert('Entre primeiro com a conta do tutor.');
+  const d=getData();
+  const pending=d.students.filter(s=>s.ra && !s.authUid && s.pass && s.pass!=='—');
+  if(!pending.length)return alert('Não há contas antigas com senha legível para migrar.');
+  if(!confirm(`Serão migradas ${pending.length} conta(s). As senhas antigas serão substituídas por novas senhas de 6 dígitos. Uma planilha será baixada antes de as senhas serem removidas do banco. Continuar?`))return;
+  const rows=[]; const errors=[]; const sec=getSecondaryAuth();
+  for(const st of pending){
+    const ra=normalizeRa(st.ra);
+    const newPass=String(Math.floor(100000+Math.random()*900000));
+    try{
+      const cred=await sec.createUserWithEmailAndPassword(studentEmailFromRa(ra),newPass);
+      await sec.signOut();
+      st.authUid=cred.user.uid;
+      rows.push({'Nome do aluno':st.name,'Login (RA)':ra,'Nova senha':newPass});
+      delete st.pass;
+    }catch(e){errors.push(`${st.name}: ${e.code||e.message}`); try{await sec.signOut()}catch(_){}}
+  }
+  if(rows.length){
+    const ws=XLSX.utils.json_to_sheet(rows);
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Acessos');
+    XLSX.writeFile(wb,'novos_acessos_firebase.xlsx');
+    setData(d); renderAll();
+  }
+  let msg=`Migração concluída: ${rows.length} conta(s) criada(s).`;
+  if(rows.length)msg+='\nA planilha com as novas senhas foi baixada. Guarde-a em local seguro.';
+  if(errors.length)msg+=`\n\n${errors.length} conta(s) não foram migradas:\n`+errors.join('\n');
+  alert(msg);
 }
 function newAttendance(bim){
   if(!currentStudent)return alert('Selecione um estudante antes de registrar o atendimento.');
@@ -849,13 +1137,17 @@ function printCurrentReport(){
 }
 
 seed();
-cloudReadyPromise=initCloudData(()=>{
+cloudReadyPromise=Promise.resolve(false);
+auth.onAuthStateChanged(user=>{
+  if(user && app.classList.contains('hidden')){ loginUser.value=user.email||''; }
+});
+function startTutorCloud(){ return initCloudData(()=>{
   if(!app.classList.contains('hidden')){
     const active=document.querySelector('#studentProfile .profile-env.active')?.id||null;
     renderAll();
     if(currentStudent){renderProfessorStudentProfile();if(active)openProfEnv(active)}
   }
-});
+}); }
 window.addEventListener('storage',()=>{ if(!app.classList.contains('hidden')) renderAll(); });
 window.addEventListener('focus',async()=>{ await ensureCloudReady(); if(!app.classList.contains('hidden')) { renderAll(); if(currentStudent) renderProfessorStudentProfile(); } });
 </script>
