@@ -677,7 +677,7 @@ async function studentLogin(){
    const code=e?.code||'';
 
    if(['auth/wrong-password','auth/invalid-credential','auth/user-not-found','auth/invalid-login-credentials'].includes(code)){
-     alert('RA ou senha incorretos. Confira os dados cadastrados pelo tutor.');
+     alert('RA ou senha incorretos. Se o tutor redefiniu o acesso, use a NOVA senha informada por ele.');
    }else if(code==='permission-denied'){
      alert('O Firebase bloqueou o acesso ao perfil. Publique as novas regras do Firestore e tente novamente.');
    }else if(code==='auth/too-many-requests'){

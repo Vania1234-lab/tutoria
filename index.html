@@ -288,7 +288,7 @@ João Souza,987654321,741258,8º B"></textarea>
       <div class="top">
         <div>
           <h1>Acessos dos estudantes</h1>
-          <p class="sub">O login continua sendo o RA. As senhas migradas ficam protegidas pelo Firebase Authentication e não podem ser visualizadas depois.</p>
+          <p class="sub">O login continua sendo o RA. Se uma senha não funcionar, use “Nova senha” para gerar um novo acesso sem apagar nenhum dado do estudante.</p>
         </div>
       </div>
       <div class="card" style="margin-bottom:14px">
@@ -695,7 +695,47 @@ function renderAccess(){
     const hay=[s.name,s.ra,s.turma].join(' ').toLowerCase();
     return (!q||hay.includes(q))&&(!f||s.turma===f);
   });
-  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Autenticação</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td>${s.authUid?'<span class="status ok">🔒 Protegida pelo Firebase</span>':(s.pass?'<span class="status warn">Senha antiga — migrar</span>':'<span class="status warn">Acesso pendente</span>')}</td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+  accessTable.innerHTML=ss.length?`<table><thead><tr><th>Estudante</th><th>Turma</th><th>Login (RA)</th><th>Autenticação</th><th>Ações</th></tr></thead><tbody>${ss.map(s=>`<tr><td><b>${s.name}</b></td><td>${s.turma}</td><td><span class="credential">${s.ra||'PENDENTE'}</span></td><td>${s.authUid?'<span class="status ok">🔒 Protegida pelo Firebase</span>':(s.pass?'<span class="status warn">Senha antiga — migrar</span>':'<span class="status warn">Acesso pendente</span>')}</td><td><div class="access-actions"><button class="mini" onclick="copyText('${s.ra||''}')">Copiar login</button><button class="mini" onclick="reissueStudentAccess('${s.id}')">🔑 Nova senha</button><button class="mini" onclick="openStudent('${s.id}')">Abrir perfil</button></div></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum estudante encontrado.</div>';
+}
+
+async function reissueStudentAccess(id){
+  if(!auth.currentUser)return alert('Entre primeiro com a conta do tutor.');
+  const d=getData();
+  const s=d.students.find(x=>String(x.id)===String(id));
+  if(!s)return alert('Estudante não encontrado.');
+  const ra=normalizeRa(s.ra);
+  if(!ra)return alert('Este estudante não possui RA válido.');
+
+  const suggested=String(Math.floor(100000+Math.random()*900000));
+  const newPass=prompt(`Digite a NOVA senha de ${s.name}.\n\nMínimo: 6 caracteres.\nSugestão: ${suggested}`,suggested);
+  if(newPass===null)return;
+  if(String(newPass).length<6)return alert('A nova senha precisa ter pelo menos 6 caracteres.');
+  if(!confirm(`Gerar um novo acesso para ${s.name}?\n\nLogin (RA): ${ra}\nNova senha: ${newPass}\n\nA ficha, boletins e atendimentos NÃO serão apagados.`))return;
+
+  const sec=getSecondaryAuth();
+  try{
+    const authEmail=uniqueStudentEmail(ra);
+    const cred=await sec.createUserWithEmailAndPassword(authEmail,String(newPass));
+    const newUid=cred.user.uid;
+    await sec.signOut();
+
+    s.authUid=newUid;
+    s.authEmail=authEmail;
+    delete s.pass;
+
+    // Atualiza primeiro o perfil e depois a ponte RA -> nova conta.
+    await firestore.collection('students').doc(String(s.id)).set(s,{merge:true});
+    await firestore.collection('loginAliases').doc(ra).set({studentId:s.id,authEmail});
+    setData(d);
+    await syncDataToCloud(d);
+    renderAll(); renderAccess(); renderStudents();
+
+    alert(`Acesso redefinido com sucesso!\n\nAluno: ${s.name}\nRA: ${ra}\nNOVA SENHA: ${newPass}\n\nUse estes dados no aluno.html. A conta antiga deixa de ter acesso ao perfil.`);
+  }catch(e){
+    try{await sec.signOut()}catch(_){}
+    console.error('Erro ao redefinir acesso:',e);
+    alert('Não foi possível gerar o novo acesso: '+(e.code||e.message||e));
+  }
 }
 function copyText(txt){
   if(!txt)return;
@@ -947,7 +987,7 @@ async function importStudentsBulk(){
     result.innerHTML=`<div class="notice">Nenhum registro válido para importar.<br>${invalid.map(x=>'• '+x).join('<br>')}</div>`;
     return;
   }
-  if(!confirm(`Foram encontrados ${valid.length} tutorado(s) válido(s).\n\nQuem já estiver cadastrado será aproveitado, sem apagar ficha, atendimentos ou boletins. Novos tutorados serão criados no Firebase Authentication. Continuar?`))return;
+  if(!confirm(`Foram encontrados ${valid.length} tutorado(s) válido(s).\n\nQuem já estiver cadastrado será aproveitado, sem apagar ficha, atendimentos ou boletins. A senha informada na planilha passará a ser a senha válida do aluno. Continuar?`))return;
 
   btn.disabled=true; btn.textContent='Importando...';
   result.innerHTML='<div class="notice">Importação em andamento. Não feche esta página.</div>';
@@ -972,10 +1012,18 @@ async function importStudentsBulk(){
             await firestore.collection('loginAliases').doc(row.ra).set({studentId:st.id,authEmail});
             authCreated++;
           }else{
-            // Conta já autenticada: preserva a conta e a senha atual do Firebase.
-            const authEmail=st.authEmail;
+            // Ao reimportar um aluno existente, a senha da planilha passa a valer.
+            // Como o SDK do navegador não pode alterar a senha de outra conta,
+            // criamos uma nova conta interna e religamos o mesmo perfil a ela.
+            const authEmail=uniqueStudentEmail(row.ra);
+            const cred=await sec.createUserWithEmailAndPassword(authEmail,row.pass);
+            await sec.signOut();
+            st.authUid=cred.user.uid;
+            st.authEmail=authEmail;
+            delete st.pass;
             await firestore.collection('students').doc(String(st.id)).set(st,{merge:true});
-            if(authEmail)await firestore.collection('loginAliases').doc(row.ra).set({studentId:st.id,authEmail},{merge:true});
+            await firestore.collection('loginAliases').doc(row.ra).set({studentId:st.id,authEmail});
+            authCreated++;
           }
         }else{
           const studentId='s'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
